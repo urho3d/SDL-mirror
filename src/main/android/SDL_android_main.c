@@ -1,6 +1,9 @@
 /*
     SDL_android_main.c, placed in the public domain by Sam Lantinga  3/13/14
 */
+
+// Modified by Lasse Oorni for Urho3D
+
 #include "../../SDL_internal.h"
 
 #ifdef __ANDROID__
@@ -13,14 +16,15 @@
 *******************************************************************************/
 #include <jni.h>
 
+// Urho3D: added extra filesDir parameter
 /* Called before SDL_main() to initialize JNI bindings in SDL library */
-extern void SDL_Android_Init(JNIEnv* env, jclass cls);
+extern void SDL_Android_Init(JNIEnv* env, jclass cls, jstring filesDir);
 
 /* Start up the SDL app */
-void Java_org_libsdl_app_SDLActivity_nativeInit(JNIEnv* env, jclass cls, jobject obj)
+void Java_org_libsdl_app_SDLActivity_nativeInit(JNIEnv* env, jclass cls, jstring filesDir)
 {
     /* This interface could expand with ABI negotiation, calbacks, etc. */
-    SDL_Android_Init(env, cls);
+    SDL_Android_Init(env, cls, filesDir);
 
     SDL_SetMainReady();
 

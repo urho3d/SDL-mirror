@@ -18,24 +18,17 @@
  *     misrepresented as being the original software.
  *  3. This notice may not be removed or altered from any source distribution.
  */
+
+// Modified by Yao Wei Tjong for Urho3D
+
 #include "../SDL_internal.h"
 
 #if SDL_VIDEO_OPENGL_EGL
 
 #include "SDL_sysvideo.h"
-#include "SDL_egl_c.h"
-#include "SDL_loadso.h"
-#include "SDL_hints.h"
 
-#if SDL_VIDEO_DRIVER_RPI
-/* Raspbian places the OpenGL ES/EGL binaries in a non standard path */
-#define DEFAULT_EGL "/opt/vc/lib/libEGL.so"
-#define DEFAULT_OGL_ES2 "/opt/vc/lib/libGLESv2.so"
-#define DEFAULT_OGL_ES_PVR "/opt/vc/lib/libGLES_CM.so"
-#define DEFAULT_OGL_ES "/opt/vc/lib/libGLESv1_CM.so"
-
-#elif SDL_VIDEO_DRIVER_ANDROID
-/* Android */
+// Urho3D: No need to hardcode the full path, otherwise it won't work for Pidora
+#if SDL_VIDEO_DRIVER_RPI || SDL_VIDEO_DRIVER_ANDROID
 #define DEFAULT_EGL "libEGL.so"
 #define DEFAULT_OGL_ES2 "libGLESv2.so"
 #define DEFAULT_OGL_ES_PVR "libGLES_CM.so"
@@ -55,7 +48,7 @@
 #define DEFAULT_OGL_ES2 "libGLESv2.so.2"
 #define DEFAULT_OGL_ES_PVR "libGLES_CM.so.1"
 #define DEFAULT_OGL_ES "libGLESv1_CM.so.1"
-#endif /* SDL_VIDEO_DRIVER_RPI */
+#endif
 
 #define LOAD_FUNC(NAME) \
 *((void**)&_this->egl_data->NAME) = SDL_LoadFunction(_this->egl_data->dll_handle, #NAME); \
