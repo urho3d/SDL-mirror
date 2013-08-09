@@ -18,6 +18,9 @@
      misrepresented as being the original software.
   3. This notice may not be removed or altered from any source distribution.
 */
+
+// Modified by Lasse Oorni for Urho3D
+
 #include "../../SDL_internal.h"
 #include "SDL_stdinc.h"
 #include "SDL_assert.h"
@@ -289,6 +292,8 @@ static float fLastAccelerometer[3];
 static SDL_bool bHasNewData;
 
 static SDL_bool bHasEnvironmentVariables = SDL_FALSE;
+// Urho3D: application files dir
+static char* mFilesDir = 0;
 
 /*******************************************************************************
                  Functions called by JNI
@@ -434,8 +439,15 @@ void checkJNIReady(void)
     SDL_SetMainReady();
 }
 
+// Urho3D: added function
+const char* SDL_Android_GetFilesDir()
+{
+    return mFilesDir;
+}
+
 /* Activity initialization -- called before SDL_main() to initialize JNI bindings */
-JNIEXPORT void JNICALL SDL_JAVA_INTERFACE(nativeSetupJNI)(JNIEnv *env, jclass cls)
+// Urho3D: added passing user files directory from SDLActivity on startup
+JNIEXPORT void JNICALL SDL_JAVA_INTERFACE(nativeSetupJNI)(JNIEnv* mEnv, jclass cls, jstring filesDir)
 {
     __android_log_print(ANDROID_LOG_VERBOSE, "SDL", "nativeSetupJNI()");
 
@@ -472,6 +484,20 @@ JNIEXPORT void JNICALL SDL_JAVA_INTERFACE(nativeSetupJNI)(JNIEnv *env, jclass cl
     Android_ResumeSem = SDL_CreateSemaphore(0);
     if (Android_ResumeSem == NULL) {
         __android_log_print(ANDROID_LOG_ERROR, "SDL", "failed to create Android_ResumeSem semaphore");
+    }
+
+    // Copy the files dir
+    const char *str;
+    str = (*env)->GetStringUTFChars(env, filesDir, 0);
+    if (str)
+    {
+        if (mFilesDir)
+            free(mFilesDir);
+
+        size_t length = strlen(str) + 1;
+        mFilesDir = (char*)malloc(length);
+        memcpy(mFilesDir, str, length);
+        (*env)->ReleaseStringUTFChars(env, filesDir, str);
     }
 
     mActivityClass = (jclass)((*env)->NewGlobalRef(env, cls));
@@ -983,6 +1009,9 @@ JNIEXPORT void JNICALL SDL_JAVA_INTERFACE(nativeLowMemory)(
 JNIEXPORT void JNICALL SDL_JAVA_INTERFACE(nativeSendQuit)(
                                     JNIEnv *env, jclass cls)
 {
+    // Urho3D: added log print
+    __android_log_print(ANDROID_LOG_VERBOSE, "SDL", "nativeQuit()");
+
     /* Discard previous events. The user should have handled state storage
      * in SDL_APP_WILLENTERBACKGROUND. After nativeSendQuit() is called, no
      * events other than SDL_QUIT and SDL_APP_TERMINATING should fire */
@@ -1290,6 +1319,69 @@ SDL_bool Android_JNI_GetAccelerometerValues(float values[3])
     }
 
     return retval;
+}
+
+// Urho3D: added function
+void Android_JNI_FinishActivity()
+{
+    // Terminating the SDL main thread on our own may cause crashes with extra threads, so request
+    // the activity to finish instead
+    jmethodID mid;
+    JNIEnv *mEnv = Android_JNI_GetEnv();
+    mid = (*mEnv)->GetStaticMethodID(mEnv, mActivityClass, "finishActivity","()V");
+    if (mid)
+        (*mEnv)->CallStaticVoidMethod(mEnv, mActivityClass, mid);
+}
+
+static void Android_JNI_ThreadDestroyed(void* value)
+{
+    /* The thread is being destroyed, detach it from the Java VM and set the mThreadKey value to NULL as required */
+    JNIEnv *env = (JNIEnv*) value;
+    if (env != NULL) {
+        (*mJavaVM)->DetachCurrentThread(mJavaVM);
+        pthread_setspecific(mThreadKey, NULL);
+    }
+}
+
+JNIEnv* Android_JNI_GetEnv(void)
+{
+    /* From http://developer.android.com/guide/practices/jni.html
+     * All threads are Linux threads, scheduled by the kernel.
+     * They're usually started from managed code (using Thread.start), but they can also be created elsewhere and then
+     * attached to the JavaVM. For example, a thread started with pthread_create can be attached with the
+     * JNI AttachCurrentThread or AttachCurrentThreadAsDaemon functions. Until a thread is attached, it has no JNIEnv,
+     * and cannot make JNI calls.
+     * Attaching a natively-created thread causes a java.lang.Thread object to be constructed and added to the "main"
+     * ThreadGroup, making it visible to the debugger. Calling AttachCurrentThread on an already-attached thread
+     * is a no-op.
+     * Note: You can call this function any number of times for the same thread, there's no harm in it
+     */
+
+    JNIEnv *env;
+    int status = (*mJavaVM)->AttachCurrentThread(mJavaVM, &env, NULL);
+    if(status < 0) {
+        LOGE("failed to attach current thread");
+        return 0;
+    }
+
+    /* From http://developer.android.com/guide/practices/jni.html
+     * Threads attached through JNI must call DetachCurrentThread before they exit. If coding this directly is awkward,
+     * in Android 2.0 (Eclair) and higher you can use pthread_key_create to define a destructor function that will be
+     * called before the thread exits, and call DetachCurrentThread from there. (Use that key with pthread_setspecific
+     * to store the JNIEnv in thread-local-storage; that way it'll be passed into your destructor as the argument.)
+     * Note: The destructor is not called unless the stored value is != NULL
+     * Note: You can call this function any number of times for the same thread, there's no harm in it
+     *       (except for some lost CPU cycles)
+     */
+    pthread_setspecific(mThreadKey, (void*) env);
+
+    return env;
+}
+
+int Android_JNI_SetupThread(void)
+{
+    Android_JNI_GetEnv();
+    return 1;
 }
 
 /*

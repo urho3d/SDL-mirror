@@ -1,6 +1,6 @@
 /*
   Simple DirectMedia Layer
-  Copyright (C) 1997-2019 Sam Lantinga <slouken@libsdl.org>
+  Copyright (C) 1997-2017 Sam Lantinga <slouken@libsdl.org>
 
   This software is provided 'as-is', without any express or implied
   warranty.  In no event will the authors be held liable for any damages
@@ -18,6 +18,8 @@
      misrepresented as being the original software.
   3. This notice may not be removed or altered from any source distribution.
 */
+
+// Modified by Lasse Oorni for Urho3D
 
 #ifndef SDL_config_h_
 #define SDL_config_h_
@@ -41,11 +43,9 @@
 #include "SDL_config_android.h"
 #elif defined(__PSP__)
 #include "SDL_config_psp.h"
-#elif defined(__OS2__)
-#include "SDL_config_os2.h"
 #else
-/* This is a minimal configuration just to get SDL running on new platforms. */
-#include "SDL_config_minimal.h"
+// Urho3D: add Linux prebuilt config file
+#include "SDL_config_linux.h"
 #endif /* platform config */
 
 #ifdef USING_GENERATED_CONFIG_H
