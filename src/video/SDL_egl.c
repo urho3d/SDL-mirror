@@ -18,6 +18,7 @@
  *     misrepresented as being the original software.
  *  3. This notice may not be removed or altered from any source distribution.
  */
+
 #include "../SDL_internal.h"
 
 #if SDL_VIDEO_OPENGL_EGL
@@ -72,7 +73,7 @@
 #define DEFAULT_OGL_ES2 "libGLESv2.so.2"
 #define DEFAULT_OGL_ES_PVR "libGLES_CM.so.1"
 #define DEFAULT_OGL_ES "libGLESv1_CM.so.1"
-#endif /* SDL_VIDEO_DRIVER_RPI */
+#endif
 
 #ifdef SDL_VIDEO_STATIC_ANGLE
 #define LOAD_FUNC(NAME) \

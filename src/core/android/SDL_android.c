@@ -18,6 +18,9 @@
      misrepresented as being the original software.
   3. This notice may not be removed or altered from any source distribution.
 */
+
+// Modified by Lasse Oorni for Urho3D
+
 #include "../../SDL_internal.h"
 #include "SDL_stdinc.h"
 #include "SDL_assert.h"
@@ -29,6 +32,7 @@
 
 #include "SDL_system.h"
 #include "SDL_android.h"
+
 #include <EGL/egl.h>
 
 #include "../../events/SDL_events_c.h"
@@ -240,6 +244,9 @@ static jfieldID fidSeparateMouseAndTouch;
 static float fLastAccelerometer[3];
 static SDL_bool bHasNewData;
 
+// Urho3D: application files dir
+static char* mFilesDir = 0;
+
 /*******************************************************************************
                  Functions called by JNI
 *******************************************************************************/
@@ -276,12 +283,33 @@ void checkJNIReady()
     SDL_SetMainReady();    
 }
 
+// Urho3D: added function
+const char* SDL_Android_GetFilesDir()
+{
+    return mFilesDir;
+}
+
 /* Activity initialization -- called before SDL_main() to initialize JNI bindings */
-JNIEXPORT void JNICALL SDL_JAVA_INTERFACE(nativeSetupJNI)(JNIEnv* mEnv, jclass cls)
+// Urho3D: added passing user files directory from SDLActivity on startup
+JNIEXPORT void JNICALL SDL_JAVA_INTERFACE(nativeSetupJNI)(JNIEnv* mEnv, jclass cls, jstring filesDir)
 {
     __android_log_print(ANDROID_LOG_VERBOSE, "SDL", "nativeSetupJNI()");
 
     Android_JNI_SetupThread();
+
+    // Copy the files dir
+    const char *str;
+    str = (*mEnv)->GetStringUTFChars(mEnv, filesDir, 0);
+    if (str)
+    {
+        if (mFilesDir)
+            free(mFilesDir);
+
+        size_t length = strlen(str) + 1;
+        mFilesDir = (char*)malloc(length);
+        memcpy(mFilesDir, str, length);
+        (*mEnv)->ReleaseStringUTFChars(mEnv, filesDir, str);
+    }
 
     mActivityClass = (jclass)((*mEnv)->NewGlobalRef(mEnv, cls));
 
@@ -685,6 +713,9 @@ JNIEXPORT void JNICALL SDL_JAVA_INTERFACE(nativeLowMemory)(
 JNIEXPORT void JNICALL SDL_JAVA_INTERFACE(nativeQuit)(
                                     JNIEnv* env, jclass cls)
 {
+    // Urho3D: added log print
+    __android_log_print(ANDROID_LOG_VERBOSE, "SDL", "nativeQuit()");
+
     /* Discard previous events. The user should have handled state storage
      * in SDL_APP_WILLENTERBACKGROUND. After nativeQuit() is called, no
      * events other than SDL_QUIT and SDL_APP_TERMINATING should fire */
@@ -865,6 +896,18 @@ SDL_bool Android_JNI_GetAccelerometerValues(float values[3])
     }
 
     return retval;
+}
+
+// Urho3D: added function
+void Android_JNI_FinishActivity()
+{
+    // Terminating the SDL main thread on our own may cause crashes with extra threads, so request
+    // the activity to finish instead
+    jmethodID mid;
+    JNIEnv *mEnv = Android_JNI_GetEnv();
+    mid = (*mEnv)->GetStaticMethodID(mEnv, mActivityClass, "finishActivity","()V");
+    if (mid)
+        (*mEnv)->CallStaticVoidMethod(mEnv, mActivityClass, mid);
 }
 
 static void Android_JNI_ThreadDestroyed(void* value)

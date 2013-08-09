@@ -18,6 +18,9 @@
      misrepresented as being the original software.
   3. This notice may not be removed or altered from any source distribution.
 */
+
+// Modified by Lasse Oorni for Urho3D
+
 #include "../../SDL_internal.h"
 
 #if SDL_VIDEO_DRIVER_UIKIT
@@ -164,11 +167,12 @@
             CGPoint locationInView = [self touchLocation:touch shouldNormalize:NO];
             int clicks = (int) touch.tapCount;
 
-            /* send mouse moved event */
-            SDL_SendMouseMotion(sdlwindow, SDL_TOUCH_MOUSEID, 0, locationInView.x, locationInView.y);
+            // Urho3D: do not send emulated mouse events
+            /* send moved event */
+            //SDL_SendMouseMotion(sdlwindow, SDL_TOUCH_MOUSEID, 0, locationInView.x, locationInView.y);
 
             /* send mouse down event */
-            SDL_SendMouseButtonClicks(sdlwindow, SDL_TOUCH_MOUSEID, SDL_PRESSED, SDL_BUTTON_LEFT, clicks);
+            //SDL_SendMouseButtonClicks(sdlwindow, SDL_TOUCH_MOUSEID, SDL_PRESSED, SDL_BUTTON_LEFT, clicks);
 
             firstFingerDown = touch;
         }
@@ -187,7 +191,7 @@
         if (touch == firstFingerDown) {
             /* send mouse up */
             int clicks = (int) touch.tapCount;
-            SDL_SendMouseButtonClicks(sdlwindow, SDL_TOUCH_MOUSEID, SDL_RELEASED, SDL_BUTTON_LEFT, clicks);
+            //SDL_SendMouseButtonClicks(sdlwindow, SDL_TOUCH_MOUSEID, SDL_RELEASED, SDL_BUTTON_LEFT, clicks);
             firstFingerDown = nil;
         }
 
@@ -211,7 +215,7 @@
             CGPoint locationInView = [self touchLocation:touch shouldNormalize:NO];
 
             /* send moved event */
-            SDL_SendMouseMotion(sdlwindow, SDL_TOUCH_MOUSEID, 0, locationInView.x, locationInView.y);
+            //SDL_SendMouseMotion(sdlwindow, SDL_TOUCH_MOUSEID, 0, locationInView.x, locationInView.y);    // Urho3D
         }
 
         CGPoint locationInView = [self touchLocation:touch shouldNormalize:YES];
