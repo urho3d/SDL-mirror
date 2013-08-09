@@ -18,6 +18,9 @@
      misrepresented as being the original software.
   3. This notice may not be removed or altered from any source distribution.
 */
+
+// Modified by Lasse Oorni for Urho3D
+
 #include "../../SDL_internal.h"
 
 #if SDL_VIDEO_DRIVER_UIKIT
@@ -41,6 +44,9 @@
 static int forward_argc;
 static char **forward_argv;
 static int exit_status;
+
+// Urho3D: added variable
+const char* resource_dir = 0;
 
 int main(int argc, char **argv)
 {
@@ -67,6 +73,27 @@ int main(int argc, char **argv)
     free(forward_argv);
 
     return exit_status;
+}
+
+// Urho3D: added function
+void SDL_IOS_LogMessage(const char *message)
+{   
+    #ifdef _DEBUG
+    NSLog(@"%@", [NSString stringWithUTF8String: message]);
+    #endif
+}
+
+// Urho3D: added function
+const char* SDL_IOS_GetResourceDir()
+{
+    if (!resource_dir)
+    {
+        const char *temp = [[[NSBundle mainBundle] resourcePath] UTF8String];
+        resource_dir = malloc(strlen(temp + 1));
+        strcpy(resource_dir, temp);
+    }
+    
+    return resource_dir;
 }
 
 static void
