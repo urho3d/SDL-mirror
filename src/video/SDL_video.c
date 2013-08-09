@@ -18,6 +18,9 @@
      misrepresented as being the original software.
   3. This notice may not be removed or altered from any source distribution.
 */
+
+// Modified by Lasse Oorni and Yao Wei Tjong for Urho3D
+
 #include "../SDL_internal.h"
 
 /* The high-level video driver subsystem */
@@ -160,6 +163,8 @@ typedef struct {
     int bytes_per_pixel;
 } SDL_WindowTextureData;
 
+// Urho3D: check first if renderer is disabled
+#if !SDL_RENDER_DISABLED
 static SDL_bool
 ShouldUseTextureFramebuffer()
 {
@@ -398,7 +403,7 @@ SDL_DestroyWindowTexture(SDL_VideoDevice *unused, SDL_Window * window)
     SDL_free(data->pixels);
     SDL_free(data);
 }
-
+#endif
 
 static int
 cmpmodes(const void *A, const void *B)
@@ -526,11 +531,14 @@ SDL_VideoInit(const char *driver_name)
     }
 
     /* Add the renderer framebuffer emulation if desired */
+    // Urho3D: check first if renderer is disabled
+#if !SDL_RENDER_DISABLED
     if (ShouldUseTextureFramebuffer()) {
         _this->CreateWindowFramebuffer = SDL_CreateWindowTexture;
         _this->UpdateWindowFramebuffer = SDL_UpdateWindowTexture;
         _this->DestroyWindowFramebuffer = SDL_DestroyWindowTexture;
     }
+#endif
 
     /* Disable the screen saver by default. This is a change from <= 2.0.1,
        but most things using SDL are games or media players; you wouldn't
@@ -1467,8 +1475,9 @@ SDL_CreateWindow(const char *title, int x, int y, int w, int h, Uint32 flags)
     return window;
 }
 
+// Urho3D: added flags parameter
 SDL_Window *
-SDL_CreateWindowFrom(const void *data)
+SDL_CreateWindowFrom(const void *data, Uint32 flags)
 {
     SDL_Window *window;
 
@@ -1497,6 +1506,16 @@ SDL_CreateWindowFrom(const void *data)
         _this->windows->prev = window;
     }
     _this->windows = window;
+
+    // Urho3D: load OpenGL if initializing an external OpenGL window
+    if (flags & SDL_WINDOW_OPENGL) {
+        if (!_this->GL_CreateContext) {
+            SDL_SetError("No OpenGL support in video driver");
+            return NULL;
+        }
+        SDL_GL_LoadLibrary(NULL);
+        window->flags |= SDL_WINDOW_OPENGL;
+    }
 
     if (_this->CreateWindowFrom(_this, window, data) < 0) {
         SDL_DestroyWindow(window);
