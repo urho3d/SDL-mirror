@@ -309,10 +309,11 @@ X11_DispatchEvent(_THIS)
         if (orig_keycode) {
             /* Make sure dead key press/release events are sent */
             SDL_Scancode scancode = videodata->key_layout[orig_keycode];
+            // Urho3D: also send the original keycode
             if (orig_event_type == KeyPress) {
-                SDL_SendKeyboardKey(SDL_PRESSED, scancode);
+                SDL_SendKeyboardKey(SDL_PRESSED, (Uint32)(orig_keycode), scancode);
             } else {
-                SDL_SendKeyboardKey(SDL_RELEASED, scancode);
+                SDL_SendKeyboardKey(SDL_RELEASED, (Uint32)(orig_keycode), scancode);
             }
         }
         return;
