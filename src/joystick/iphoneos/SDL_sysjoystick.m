@@ -18,13 +18,17 @@
      misrepresented as being the original software.
   3. This notice may not be removed or altered from any source distribution.
 */
+
+// Modified by Yao Wei Tjong for Urho3D
+
 #include "../../SDL_internal.h"
 
 /* This is the iOS implementation of the SDL joystick API */
 #include "SDL_sysjoystick_c.h"
 
+// Urho3D - use the generated SDL_config.h header in the build tree
 /* needed for SDL_IPHONE_MAX_GFORCE macro */
-#include "SDL_config_iphoneos.h"
+#include "SDL_config.h"
 
 #include "SDL_assert.h"
 #include "SDL_events.h"
@@ -561,7 +565,7 @@ IOS_AccelerometerUpdate(SDL_Joystick * joystick)
      by MAX_SINT16 so that it is mapped to the full range of an Sint16.
 
      You can customize the clamped range of this function by modifying the
-     SDL_IPHONE_MAX_GFORCE macro in SDL_config_iphoneos.h.
+     SDL_IPHONE_MAX_GFORCE macro in SDL_config.h.cmake.
 
      Once converted to Sint16, the accelerometer data no longer has coherent
      units. You can convert the data back to units of g-force by multiplying
