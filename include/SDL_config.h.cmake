@@ -19,6 +19,8 @@
   3. This notice may not be removed or altered from any source distribution.
 */
 
+// Modified by Yao Wei Tjong for Urho3D
+
 #ifndef SDL_config_h_
 #define SDL_config_h_
 
@@ -321,6 +323,8 @@
 #cmakedefine SDL_VIDEO_DRIVER_ANDROID @SDL_VIDEO_DRIVER_ANDROID@
 #cmakedefine SDL_VIDEO_DRIVER_HAIKU @SDL_VIDEO_DRIVER_HAIKU@
 #cmakedefine SDL_VIDEO_DRIVER_COCOA @SDL_VIDEO_DRIVER_COCOA@
+// Urho3D - needed on iOS platform
+#cmakedefine SDL_VIDEO_DRIVER_UIKIT @SDL_VIDEO_DRIVER_UIKIT@
 #cmakedefine SDL_VIDEO_DRIVER_DIRECTFB @SDL_VIDEO_DRIVER_DIRECTFB@
 #cmakedefine SDL_VIDEO_DRIVER_DIRECTFB_DYNAMIC @SDL_VIDEO_DRIVER_DIRECTFB_DYNAMIC@
 #cmakedefine SDL_VIDEO_DRIVER_DUMMY @SDL_VIDEO_DRIVER_DUMMY@
@@ -391,6 +395,8 @@
 #cmakedefine SDL_POWER_LINUX @SDL_POWER_LINUX@
 #cmakedefine SDL_POWER_WINDOWS @SDL_POWER_WINDOWS@
 #cmakedefine SDL_POWER_MACOSX @SDL_POWER_MACOSX@
+// Urho3D - needed on iOS platform
+#cmakedefine SDL_POWER_UIKIT @SDL_POWER_UIKIT@
 #cmakedefine SDL_POWER_HAIKU @SDL_POWER_HAIKU@
 #cmakedefine SDL_POWER_EMSCRIPTEN @SDL_POWER_EMSCRIPTEN@
 #cmakedefine SDL_POWER_HARDWIRED @SDL_POWER_HARDWIRED@
@@ -410,6 +416,11 @@
 
 /* Enable dynamic libsamplerate support */
 #cmakedefine SDL_LIBSAMPLERATE_DYNAMIC @SDL_LIBSAMPLERATE_DYNAMIC@
+
+// Urho3D - needed on iOS platform
+#cmakedefine SDL_IPHONE_KEYBOARD @SDL_IPHONE_KEYBOARD@
+#cmakedefine SDL_IPHONE_LAUNCHSCREEN @SDL_IPHONE_LAUNCHSCREEN@
+#cmakedefine SDL_IPHONE_MAX_GFORCE @SDL_IPHONE_MAX_GFORCE@
 
 /* Platform specific definitions */
 #if !defined(__WIN32__)

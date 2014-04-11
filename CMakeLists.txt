@@ -1,20 +1,56 @@
-if(${CMAKE_SOURCE_DIR} STREQUAL ${CMAKE_BINARY_DIR})
-  message(FATAL_ERROR "Prevented in-tree built. Please create a build directory outside of the SDL source code and call cmake from there")
-endif()
+#
+# Simple DirectMedia Layer
+# Copyright (C) 1997-2016 Sam Lantinga <slouken@libsdl.org>
+#
+# This software is provided 'as-is', without any express or implied
+# warranty.  In no event will the authors be held liable for any damages
+# arising from the use of this software.
+#
+# Permission is granted to anyone to use this software for any purpose,
+# including commercial applications, and to alter it and redistribute it
+# freely, subject to the following restrictions:
+#
+# 1. The origin of this software must not be misrepresented; you must not
+# claim that you wrote the original software. If you use this software
+# in a product, an acknowledgment in the product documentation would be
+# appreciated but is not required.
+# 2. Altered source versions must be plainly marked as such, and must not be
+# misrepresented as being the original software.
+# 3. This notice may not be removed or altered from any source distribution.
+#
 
-cmake_minimum_required(VERSION 2.8.11)
-project(SDL2 C)
+# Modified by Yao Wei Tjong for Urho3D, the modified portion is licensed under below license
 
-# !!! FIXME: this should probably do "MACOSX_RPATH ON" as a target property
-# !!! FIXME:  for the SDL2 shared library (so you get an
-# !!! FIXME:  install_name ("soname") of "@rpath/libSDL-whatever.dylib"
-# !!! FIXME:  instead of "/usr/local/lib/libSDL-whatever.dylib"), but I'm
-# !!! FIXME:  punting for now and leaving the existing behavior. Until this
-# !!! FIXME:  properly resolved, this line silences a warning in CMake 3.0+.
-# !!! FIXME:  remove it and this comment entirely once the problem is
-# !!! FIXME:  properly resolved.
-#cmake_policy(SET CMP0042 OLD)
+#
+# Copyright (c) 2008-2016 the Urho3D project.
+#
+# Permission is hereby granted, free of charge, to any person obtaining a copy
+# of this software and associated documentation files (the "Software"), to deal
+# in the Software without restriction, including without limitation the rights
+# to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+# copies of the Software, and to permit persons to whom the Software is
+# furnished to do so, subject to the following conditions:
+#
+# The above copyright notice and this permission notice shall be included in
+# all copies or substantial portions of the Software.
+#
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+# THE SOFTWARE.
+#
 
+# Urho3D - commented out in-source tree build prevention as Urho3D supports both out-of-source and in-source tree builds
+
+# Urho3D - commented out setting SDL2 as project name as we want SDL sub-library to remain within Urho3D "umbrella" project
+#          instead, just enable the required language support and set the extra variables associated with project() command
+enable_language (C)
+set (SDL2_SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR})
+set (SDL2_BINARY_DIR ${CMAKE_CURRENT_BINARY_DIR})
+# Urho3D - commented out CheckTypeSize, FindPkgConfig, and GNUInstallDirs modules as the corresponding macros are not being used in our modified version
 include(CheckFunctionExists)
 include(CheckLibraryExists)
 include(CheckIncludeFiles)
@@ -23,12 +59,9 @@ include(CheckSymbolExists)
 include(CheckCSourceCompiles)
 include(CheckCSourceRuns)
 include(CheckCCompilerFlag)
-include(CheckTypeSize)
 include(CheckStructHasMember)
 include(CMakeDependentOption)
-include(FindPkgConfig)
-include(GNUInstallDirs)
-set(CMAKE_MODULE_PATH "${SDL2_SOURCE_DIR}/cmake")
+# Urho3D - commented out CMAKE_MODULE_PATH configuration so that it does not mess up with ours; besides below two include() use file signature instead of module signature
 include(${SDL2_SOURCE_DIR}/cmake/macros.cmake)
 include(${SDL2_SOURCE_DIR}/cmake/sdlchecks.cmake)
 
@@ -50,11 +83,7 @@ set(SDL_VERSION "${SDL_MAJOR_VERSION}.${SDL_MINOR_VERSION}.${SDL_MICRO_VERSION}"
 set(DYLIB_CURRENT_VERSION 10.0.0)
 set(DYLIB_COMPATIBILITY_VERSION 1.0.0)
 
-# Set defaults preventing destination file conflicts
-set(SDL_CMAKE_DEBUG_POSTFIX "d"
-    CACHE STRING "Name suffix for debug builds")
-
-mark_as_advanced(CMAKE_IMPORT_LIBRARY_SUFFIX SDL_CMAKE_DEBUG_POSTFIX)
+# Urho3D - commented out CMAKE_DEBUG_POSTFIX configuration as our build system deos not not expose SDL as a library
 
 # Calculate a libtool-like version number
 math(EXPR LT_CURRENT "${SDL_MICRO_VERSION} - ${SDL_INTERFACE_AGE}")
@@ -64,93 +93,67 @@ set(LT_REVISION "${SDL_INTERFACE_AGE}")
 set(LT_RELEASE "${SDL_MAJOR_VERSION}.${SDL_MINOR_VERSION}")
 set(LT_VERSION "${LT_MAJOR}.${LT_AGE}.${LT_REVISION}")
 
-#message(STATUS "${LT_VERSION} :: ${LT_AGE} :: ${LT_REVISION} :: ${LT_CURRENT} :: ${LT_RELEASE}")
+# Urho3D - commented out debug print
 
 # General settings & flags
-set(LIBRARY_OUTPUT_DIRECTORY "build")
+# Urho3D - commented out LIBRARY_OUTPUT_DIRECTORY configuration so that it does not mess up with our global configuration setup
 # Check for 64 or 32 bit
-set(SIZEOF_VOIDP ${CMAKE_SIZEOF_VOID_P})
-if(CMAKE_SIZEOF_VOID_P EQUAL 8)
+# Urho3D - bug fix - using CMAKE_SIZEOF_VOID_P is not accurate in a situation where a multilib-capable compiler is chosen and user has opted to use non-native ABI; instead using URHO3D_64BIT build option as it also captures the user intention
+if(URHO3D_64BIT)
   set(ARCH_64 TRUE)
   set(PROCESSOR_ARCH "x64")
 else()
   set(ARCH_64 FALSE)
   set(PROCESSOR_ARCH "x86")
 endif()
-set(LIBNAME SDL2)
-if(NOT LIBTYPE)
-  set(LIBTYPE SHARED)
-endif()
+# Urho3D - commented out redundant CMake variables that do not appear to be used anywhere
 
 # Get the platform
-if(WIN32)
-  if(NOT WINDOWS)
-    set(WINDOWS TRUE)
-  endif()
-elseif(UNIX AND NOT APPLE)
-  if(CMAKE_SYSTEM_NAME MATCHES ".*Linux")
-    set(LINUX TRUE)
-  elseif(CMAKE_SYSTEM_NAME MATCHES "kFreeBSD.*")
-    set(FREEBSD TRUE)
-  elseif(CMAKE_SYSTEM_NAME MATCHES "kNetBSD.*|NetBSD.*")
-    set(NETBSD TRUE)
-  elseif(CMAKE_SYSTEM_NAME MATCHES "kOpenBSD.*|OpenBSD.*")
-    set(OPENBSD TRUE)
-  elseif(CMAKE_SYSTEM_NAME MATCHES ".*GNU.*")
-    set(GNU TRUE)
-  elseif(CMAKE_SYSTEM_NAME MATCHES ".*BSDI.*")
-    set(BSDI TRUE)
-  elseif(CMAKE_SYSTEM_NAME MATCHES "DragonFly.*|FreeBSD")
-    set(FREEBSD TRUE)
-  elseif(CMAKE_SYSTEM_NAME MATCHES "SYSV5.*")
-    set(SYSV5 TRUE)
-  elseif(CMAKE_SYSTEM_NAME MATCHES "Solaris.*")
-    set(SOLARIS TRUE)
-  elseif(CMAKE_SYSTEM_NAME MATCHES "HP-UX.*")
-    set(HPUX TRUE)
-  elseif(CMAKE_SYSTEM_NAME MATCHES "AIX.*")
-    set(AIX TRUE)
-  elseif(CMAKE_SYSTEM_NAME MATCHES "Minix.*")
-    set(MINIX TRUE)
-  endif()
-elseif(APPLE)
-  if(CMAKE_SYSTEM_NAME MATCHES ".*Darwin.*")
-    set(DARWIN TRUE)
-  elseif(CMAKE_SYSTEM_NAME MATCHES ".*MacOS.*")
-    set(MACOSX TRUE)
-  endif()
-  # TODO: iOS?
-elseif(CMAKE_SYSTEM_NAME MATCHES "BeOS.*")
-  message_error("BeOS support has been removed as of SDL 2.0.2.")
-elseif(CMAKE_SYSTEM_NAME MATCHES "Haiku.*")
-  set(HAIKU TRUE)
-endif()
-
-# Don't mistake osx for unix
-if(UNIX AND NOT APPLE)
-  set(UNIX_SYS ON)
-else()
-  set(UNIX_SYS OFF)
-endif()
-
-if(UNIX OR APPLE)
-  set(UNIX_OR_MAC_SYS ON)
-else()
-  set(UNIX_OR_MAC_SYS OFF)
-endif()
-
-if (UNIX_OR_MAC_SYS AND NOT EMSCRIPTEN) # JavaScript does not yet have threading support, so disable pthreads when building for Emscripten.
-  set(SDL_PTHREADS_ENABLED_BY_DEFAULT ON)
-else()
-  set(SDL_PTHREADS_ENABLED_BY_DEFAULT OFF)
+# Urho3D - rearrange the if-elseif blocks (specific case before generic case), simplify the regex, and remove unused variables
+if (WIN32)
+  set(WINDOWS TRUE)
+elseif (HAIKU OR ANDROID OR IOS OR TVOS)   # IOS/TVOS CMake variables are defined in Urho3D when targeting iOS/tvOS platforms, respectively
+  # Do nothing here but this should prevent these platforms from entering the more generic case below, i.e.
+  # - preventing LINUX variable being set for Android (when using older CMake)
+  # - preventing DARWIN/MACOSX variabe being set for iOS
+  # - preventing UNIX_SYS variable being set for Haiku
+elseif (APPLE)
+  if (CMAKE_SYSTEM_NAME MATCHES Darwin)
+    set (DARWIN TRUE)
+  elseif (CMAKE_SYSTEM_NAME MATCHES MacOS)
+    set (MACOSX TRUE)
+  endif ()
+elseif (UNIX)
+  set (UNIX_SYS TRUE)
+  if (CMAKE_SYSTEM_NAME MATCHES Linux)
+    set (LINUX TRUE)
+  elseif (CMAKE_SYSTEM_NAME MATCHES FreeBSD|DragonFly)
+    set (FREEBSD TRUE)
+  elseif (CMAKE_SYSTEM_NAME MATCHES NetBSD)
+    set (NETBSD TRUE)
+  elseif (CMAKE_SYSTEM_NAME MATCHES OpenBSD)
+    set (OPENBSD TRUE)
+  elseif (CMAKE_SYSTEM_NAME MATCHES GNU)
+    set (GNU TRUE)
+  elseif (CMAKE_SYSTEM_NAME MATCHES BSDI)
+    set (BSDI TRUE)
+  elseif (CMAKE_SYSTEM_NAME MATCHES SYSV5)
+    set (SYSV5 TRUE)
+  elseif (CMAKE_SYSTEM_NAME MATCHES Solaris)
+    set (SOLARIS TRUE)
+  elseif (CMAKE_SYSTEM_NAME MATCHES HP-UX)
+    set (HPUX TRUE)
+  elseif (CMAKE_SYSTEM_NAME MATCHES AIX)
+    set (AIX TRUE)
+  elseif (CMAKE_SYSTEM_NAME MATCHES Minix)
+    set (MINIX TRUE)
+  elseif (CMAKE_SYSTEM_NAME MATCHES BeOS)
+    message_error ("BeOS support has been removed as of SDL 2.0.2.")
+  endif ()
 endif()
 
 # Default option knobs
-if(APPLE OR ARCH_64)
-  if(NOT "${CMAKE_OSX_ARCHITECTURES}" MATCHES "arm")
-    set(OPT_DEF_SSEMATH ON)
-  endif()
-endif()
+# Urho3D - commented out OPT_DEF_SSEMATH default variable as the underyling SSEMATH build option is also being commented out by us
 if(UNIX OR MINGW OR MSYS)
   set(OPT_DEF_LIBC ON)
 endif()
@@ -169,24 +172,12 @@ else()
   set(OPT_DEF_ASM FALSE)
 endif()
 
-if(USE_GCC OR USE_CLANG)
-  set(OPT_DEF_GCC_ATOMICS ON)
-endif()
+# Urho3D - commented out compiler/linker flags setup as we have configured all our compiler/linker flags as we want globally
 
-# Default flags, if not set otherwise
-if("$ENV{CFLAGS}" STREQUAL "")
-  if(CMAKE_BUILD_TYPE STREQUAL "")
-    if(USE_GCC OR USE_CLANG)
-      set(CMAKE_C_FLAGS "-g -O3")
-    endif()
-  endif()
-else()
-  set(CMAKE_C_FLAGS "$ENV{CFLAGS}")
-  list(APPEND EXTRA_CFLAGS "$ENV{CFLAGS}")
-endif()
-if(NOT ("$ENV{CFLAGS}" STREQUAL "")) # Hackish, but does the trick on Win32
-  list(APPEND EXTRA_LDFLAGS "$ENV{LDFLAGS}")
-endif()
+# Those are used for pkg-config and friends, so that the SDL2.pc, sdl2-config, # etc. are created correctly.
+# Urho3D - we do not use these variables for pkg-config setup for SDL library but we may need them later for Urho3D library
+set (SDL_LIBS)
+set (SDL_CFLAGS)
 
 if(MSVC)
   option(FORCE_STATIC_VCRT "Force /MT for static VC runtimes" OFF)
@@ -223,12 +214,23 @@ endif()
 # in this file need to change that, so remember the original value, and
 # restore back to that afterwards. For check_function_exists() to work in
 # Emscripten, this value must be at its default value.
-set(ORIG_CMAKE_REQUIRED_FLAGS ${CMAKE_REQUIRED_FLAGS})
+# Urho3D - also due to a CMake's try_compile() bug on iOS platform, the CMAKE_REQUIRED_FLAGS contains our SmileyHack-injection on iOS platform
+set (ORIG_CMAKE_REQUIRED_FLAGS ${CMAKE_REQUIRED_FLAGS})
+# Urho3D - save the original CMake global settings, do not leave them to chances
+set (ORIG_CMAKE_REQUIRED_INCLUDES ${CMAKE_REQUIRED_INCLUDES})
+set (ORIG_CMAKE_REQUIRED_LIBRARIES ${CMAKE_REQUIRED_LIBRARIES})
+
+if (RPI)
+  # Urho3D - TODO - move the find_package(VideoCore REQUIRED) call from Urho3D common module to here later after we have refactored the library dependency handling
+  # Urho3D - bug fix - adjust the header search path for subsequent pthread, EGL and OpenGLES2 checks
+  list (APPEND CMAKE_REQUIRED_INCLUDES ${VIDEOCORE_INCLUDE_DIRS})
+endif ()
 
 if(CYGWIN)
   # We build SDL on cygwin without the UNIX emulation layer
-  include_directories("-I/usr/include/mingw")
-  set(CMAKE_REQUIRED_FLAGS "${CMAKE_REQUIRED_FLAGS} -mno-cygwin")
+  # Urho3D - bug fix - we do not support Cygwin build so this fix is untested, just for completeness sake
+  include_directories(/usr/include/mingw)
+  set(CMAKE_REQUIRED_FLAGS "-mno-cygwin ${ORIG_CMAKE_REQUIRED_FLAGS}")
   check_c_source_compiles("int main(int argc, char **argv) {}"
     HAVE_GCC_NO_CYGWIN)
   set(CMAKE_REQUIRED_FLAGS ${ORIG_CMAKE_REQUIRED_FLAGS})
@@ -241,32 +243,29 @@ endif()
 
 add_definitions(-DUSING_GENERATED_CONFIG_H)
 # General includes
-include_directories(${SDL2_BINARY_DIR}/include ${SDL2_SOURCE_DIR}/include)
-if(USE_GCC OR USE_CLANG)
-  set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -idirafter ${SDL2_SOURCE_DIR}/src/video/khronos")
-else()
-  include_directories(${SDL2_SOURCE_DIR}/src/video/khronos)
-endif()
+# Urho3D - use 'generated' path suffix for generated config header file, the suffic prevents overwriting the header file with the same name in the source tree in case of non out-of-source build tree is being used
+set (INCLUDE_DIRS ${SDL2_BINARY_DIR}/include/generated ${SDL2_SOURCE_DIR}/include ${SDL2_SOURCE_DIR}/src/video/khronos)
 
 # All these ENABLED_BY_DEFAULT vars will default to ON if not specified, so
 #  you only need to have a platform override them if they are disabling.
-set(OPT_DEF_ASM TRUE)
+# Urho3D - bug fix - commented out double initialization of the OPT_DEF_ASM variable, it has been initialized properly in "Compiler info" section above
 if(EMSCRIPTEN)
   # Set up default values for the currently supported set of subsystems:
   # Emscripten/Javascript does not have assembly support, a dynamic library
   # loading architecture, low-level CPU inspection or multithreading.
   set(OPT_DEF_ASM FALSE)
   set(SDL_SHARED_ENABLED_BY_DEFAULT OFF)
-  set(SDL_ATOMIC_ENABLED_BY_DEFAULT OFF)
+  # Urho3D - leave SDL_ATOMIC and SDL_LOADSO enable for Emscripten
   set(SDL_THREADS_ENABLED_BY_DEFAULT OFF)
-  set(SDL_LOADSO_ENABLED_BY_DEFAULT OFF)
   set(SDL_CPUINFO_ENABLED_BY_DEFAULT OFF)
-  set(SDL_DLOPEN_ENABLED_BY_DEFAULT OFF)
 endif()
 
-if (NOT DEFINED SDL_SHARED_ENABLED_BY_DEFAULT)
-    set(SDL_SHARED_ENABLED_BY_DEFAULT ON)
-endif()
+# Urho3D - we always build internal sub-libraries as STATIC library type, so this build option is not applicable to us
+set (SDL_SHARED_ENABLED_BY_DEFAULT OFF)
+# Urho3D - we prefer to disable 2D render subsystem by default
+if (NOT DEFINED SDL_RENDER_ENABLED_BY_DEFAULT)
+    set (SDL_RENDER_ENABLED_BY_DEFAULT OFF)
+endif ()
 
 set(SDL_SUBSYSTEMS
     Atomic Audio Video Render Events Joystick Haptic Power Threads Timers
@@ -276,67 +275,93 @@ foreach(_SUB ${SDL_SUBSYSTEMS})
   if (NOT DEFINED SDL_${_OPT}_ENABLED_BY_DEFAULT)
     set(SDL_${_OPT}_ENABLED_BY_DEFAULT ON)
   endif()
-  option(SDL_${_OPT} "Enable the ${_SUB} subsystem" ${SDL_${_OPT}_ENABLED_BY_DEFAULT})
+  # Urho3D - bug fix - prevent SDL_DLOPEN build option from being declared twice
+  if (NOT _OPT MATCHES DLOPEN|HAPTIC)
+    option(SDL_${_OPT} "Enable the ${_SUB} subsystem" ${SDL_${_OPT}_ENABLED_BY_DEFAULT})
+  endif ()
 endforeach()
+# Urho3D - declare SDL_HAPTIC as a dependent option to SDL_JOYSTICK as haptic requires some private functions from the joystick subsystem
+dep_option (SDL_HAPTIC "Enable the Haptic subsystem" ${SDL_HAPTIC_ENABLED_BY_DEFAULT} SDL_JOYSTICK OFF)
 
+# Urho3D - TODO - put all these options into SDL-specific namespace group, they are littering CMake-gui all over the place as it is now
+#          Also there seems to be duplicate between SDL_SUBSYSTEMS above with build options below: SDL_ATOMIC vs GCC_ATOMICS, SDL_THREADS vs PTHREADS, SDL_DLOPEN (subsystem) vs SDL_DLOPEN (option)
 option_string(ASSERTIONS "Enable internal sanity checks (auto/disabled/release/enabled/paranoid)" "auto")
 #set_option(DEPENDENCY_TRACKING "Use gcc -MMD -MT dependency tracking" ON)
 set_option(LIBC                "Use the system C library" ${OPT_DEF_LIBC})
-set_option(GCC_ATOMICS         "Use gcc builtin atomics" ${OPT_DEF_GCC_ATOMICS})
+# Urho3D - bug fix - also enable GCC_ATOMICS by default for Clang (including Emscripten which is a Clang derivative)
+dep_option(GCC_ATOMICS         "Use gcc builtin atomics" ON "USE_GCC OR USE_CLANG" OFF)
 set_option(ASSEMBLY            "Enable assembly routines" ${OPT_DEF_ASM})
-set_option(SSEMATH             "Allow GCC to use SSE floating point math" ${OPT_DEF_SSEMATH})
-set_option(MMX                 "Use MMX assembly routines" ${OPT_DEF_ASM})
-set_option(3DNOW               "Use 3Dnow! MMX assembly routines" ${OPT_DEF_ASM})
-set_option(SSE                 "Use SSE assembly routines" ${OPT_DEF_ASM})
-set_option(SSE2                "Use SSE2 assembly routines" ${OPT_DEF_SSEMATH})
-set_option(SSE3                "Use SSE3 assembly routines" ${OPT_DEF_SSEMATH})
-set_option(ALTIVEC             "Use Altivec assembly routines" ${OPT_DEF_ASM})
+# Urho3D - commented out SSEMATH, SSE, SSE2, SSE3, MMX, 3DNOW, ALTIVEC build options as they have been reclassifified as Urho3D own build options
 set_option(DISKAUDIO           "Support the disk writer audio driver" ON)
 set_option(DUMMYAUDIO          "Support the dummy audio driver" ON)
 set_option(VIDEO_DIRECTFB      "Use DirectFB video driver" OFF)
-dep_option(DIRECTFB_SHARED     "Dynamically load directfb support" ON "VIDEO_DIRECTFB" OFF)
+dep_option(DIRECTFB_SHARED     "Dynamically load directfb support" ON VIDEO_DIRECTFB OFF)
 set_option(VIDEO_DUMMY         "Use dummy video driver" ON)
 set_option(VIDEO_OPENGL        "Include OpenGL support" ON)
-set_option(VIDEO_OPENGLES      "Include OpenGL ES support" ON)
-set_option(PTHREADS            "Use POSIX threads for multi-threading" ${SDL_PTHREADS_ENABLED_BY_DEFAULT})
-dep_option(PTHREADS_SEM        "Use pthread semaphores" ON "PTHREADS" OFF)
-set_option(SDL_DLOPEN          "Use dlopen for shared object loading" ${SDL_DLOPEN_ENABLED_BY_DEFAULT})
-set_option(OSS                 "Support the OSS audio API" ${UNIX_SYS})
-set_option(ALSA                "Support the ALSA audio API" ${UNIX_SYS})
-dep_option(ALSA_SHARED         "Dynamically load ALSA audio support" ON "ALSA" OFF)
-set_option(JACK                "Support the JACK audio API" ${UNIX_SYS})
-dep_option(JACK_SHARED         "Dynamically load JACK audio support" ON "JACK" OFF)
-set_option(ESD                 "Support the Enlightened Sound Daemon" ${UNIX_SYS})
-dep_option(ESD_SHARED          "Dynamically load ESD audio support" ON "ESD" OFF)
-set_option(PULSEAUDIO          "Use PulseAudio" ${UNIX_SYS})
-dep_option(PULSEAUDIO_SHARED   "Dynamically load PulseAudio support" ON "PULSEAUDIO" OFF)
-set_option(ARTS                "Support the Analog Real Time Synthesizer" ${UNIX_SYS})
-dep_option(ARTS_SHARED         "Dynamically load aRts audio support" ON "ARTS" OFF)
-set_option(NAS                 "Support the NAS audio API" ${UNIX_SYS})
-set_option(NAS_SHARED          "Dynamically load NAS audio API" ${UNIX_SYS})
-set_option(SNDIO               "Support the sndio audio API" ${UNIX_SYS})
-set_option(FUSIONSOUND         "Use FusionSound audio driver" OFF)
-dep_option(FUSIONSOUND_SHARED  "Dynamically load fusionsound audio support" ON "FUSIONSOUND" OFF)
-set_option(LIBSAMPLERATE       "Use libsamplerate for audio rate conversion" ${UNIX_SYS})
-dep_option(LIBSAMPLERATE_SHARED "Dynamically load libsamplerate" ON "LIBSAMPLERATE" OFF)
-set_option(RPATH               "Use an rpath when linking SDL" ${UNIX_SYS})
-set_option(CLOCK_GETTIME       "Use clock_gettime() instead of gettimeofday()" OFF)
+# Urho3D - hide OpenGLES option from MinGW platform because it does not have the necessary header file to build OpenGLES video driver
+dep_option(VIDEO_OPENGLES      "Include OpenGL ES support" ON "NOT MINGW" OFF)
+# Urho3D - only make PTHREADS option available on UNIX-like platforms
+dep_option(PTHREADS            "Use POSIX threads for multi-threading" ON UNIX OFF)
+dep_option(PTHREADS_SEM        "Use pthread semaphores" ON PTHREADS OFF)
+# Urho3D - SDL_DLOPEN was originally set as option twice (one here and one in the subsystem section above), we keep the one here so that we can make the option dependent on other conditions
+dep_option(SDL_DLOPEN          "Use dlopen for shared object loading" ON "UNIX\;NOT IOS OR NOT IPHONEOS_DEPLOYMENT_TARGET OR NOT IPHONEOS_DEPLOYMENT_TARGET VERSION_LESS 8" OFF)
+# Urho3D - hide Unix-specific audio driver options from Android platform
+dep_option(OSS                 "Support the OSS audio API" ON UNIX_SYS OFF)
+dep_option(ALSA                "Support the ALSA audio API" ON UNIX_SYS OFF)
+dep_option(ALSA_SHARED         "Dynamically load ALSA audio support" ON ALSA OFF)
+dep_option(JACK                "Support the JACK audio API" ON UNIX_SYS OFF)
+dep_option(JACK_SHARED         "Dynamically load JACK audio support" ON JACK OFF)
+dep_option(ESD                 "Support the Enlightened Sound Daemon" ON UNIX_SYS OFF)
+dep_option(ESD_SHARED          "Dynamically load ESD audio support" ON ESD OFF)
+dep_option(PULSEAUDIO          "Use PulseAudio" ON UNIX_SYS OFF)
+dep_option(PULSEAUDIO_SHARED   "Dynamically load PulseAudio support" ON PULSEAUDIO OFF)
+dep_option(ARTS                "Support the Analog Real Time Synthesizer" ON UNIX_SYS OFF)
+dep_option(ARTS_SHARED         "Dynamically load aRts audio support" ON ARTS OFF)
+dep_option(NAS                 "Support the NAS audio API" ON UNIX_SYS OFF)
+dep_option(NAS_SHARED          "Dynamically load NAS audio API" ON NAS OFF)
+dep_option(SNDIO               "Support the Roar audio API" ON UNIX_SYS OFF)
+dep_option(FUSIONSOUND         "Use FusionSound audio driver" ON UNIX_SYS OFF)
+dep_option(FUSIONSOUND_SHARED  "Dynamically load fusionsound audio support" ON FUSIONSOUND OFF)
+dep_option(LIBSAMPLERATE       "Use libsamplerate for audio rate conversion" ON UNIX_SYS OFF)
+dep_option(LIBSAMPLERATE_SHARED "Dynamically load libsamplerate" ON LIBSAMPLERATE OFF)
+# Urho3D - commented out RPATH as an option because Urho3D is configured to always use RPATH, so init the variable to always TRUE
+set (RPATH TRUE)
+# Urho3D - prefer clock_gettime() when it is available (hide the option for Windows and Apple)
+dep_option(CLOCK_GETTIME       "Use clock_gettime() instead of gettimeofday()" ON "NOT WINDOWS AND NOT APPLE" OFF)
 set_option(INPUT_TSLIB         "Use the Touchscreen library for input" ${UNIX_SYS})
-set_option(VIDEO_X11           "Use X11 video driver" ${UNIX_SYS})
 set_option(VIDEO_WAYLAND       "Use Wayland video driver" ${UNIX_SYS})
 dep_option(WAYLAND_SHARED      "Dynamically load Wayland support" ON "VIDEO_WAYLAND" OFF)
-dep_option(VIDEO_WAYLAND_QT_TOUCH  "QtWayland server support for Wayland video driver" ON "VIDEO_WAYLAND" OFF)
-set_option(VIDEO_RPI           "Use Raspberry Pi video driver" ${UNIX_SYS})
+# Urho3D - change the VIDEO_WAYLAND_QT_TOUCH default value to FALSE (this is only needed by Sailfish[?] but we don't know way to auto-detect that yet)
+dep_option(VIDEO_WAYLAND_QT_TOUCH  "QtWayland server support for Wayland video driver" OFF VIDEO_WAYLAND OFF)
+# Urho3D - only make VIDEO_RPI option available on Raspberry-Pi platform
+dep_option(VIDEO_RPI           "Use Raspberry Pi video driver" ON RPI OFF)
+# Urho3D - bug fix - make VIDEO_X11 build option available for desktop UNIX (including OSX) only
+dep_option(VIDEO_X11           "Use X11 video driver" ON "UNIX_SYS OR APPLE\;NOT RPI AND NOT IOS AND NOT TVOS" OFF)
 dep_option(X11_SHARED          "Dynamically load X11 support" ON "VIDEO_X11" OFF)
 set(SDL_X11_OPTIONS Xcursor Xinerama XInput Xrandr Xscrnsaver XShape Xvm)
 foreach(_SUB ${SDL_X11_OPTIONS})
   string(TOUPPER "VIDEO_X11_${_SUB}" _OPT)
-  dep_option(${_OPT}           "Enable ${_SUB} support" ON "VIDEO_X11" OFF)
+  dep_option(${_OPT}           "Enable ${_SUB} support" ON VIDEO_X11 OFF)
 endforeach()
-set_option(VIDEO_COCOA         "Use Cocoa video driver" ${APPLE})
-set_option(DIRECTX             "Use DirectX for Windows audio/video" ${WINDOWS})
+# Urho3D - bug fix - only make the COCOA option available on OSX platform but not iOS/tvOS; it does not make too much sense now for user to disable it because SDL/Apple has dropped support for XQuartz (X11 on Mac), so Cocoa is the only video driver available
+#          But we still keep it as an option here because it should be possible to add back the XQuartz support
+dep_option(VIDEO_COCOA         "Use Cocoa video driver" ON "APPLE AND NOT IOS AND NOT TVOS" OFF)
+# Urho3D - only make DIRECTX option available on Windows platform when URHO3D_OPENGL is enabled, i.e. DIRECTX variable must always be ON (not an option) when URHO3D_OPENGL is disabled because in this case it must depend on Direct3D which is a component of DirectX
+if (WINDOWS)
+  dep_option(DIRECTX           "Use DirectX for Windows audio/video" ON URHO3D_OPENGL ON)
+else ()
+  set (DIRECTX OFF)  # Make it off explicitly when not targeting Windows platform, just in case user passes it in accidentally via CLI
+endif ()
+# Urho3D - commented out RENDER_D3D as an option to avoid potential conflict with our URHO3D_OPENGL and URHO3D_D3D11 build options on Windows platform
+#          Instead just initialize the variable according to our build options; Urho3D also by default disables the SDL renderer subsystem
+if (WINDOWS)
+  if (URHO3D_OPENGL)
+    set (RENDER_D3D FALSE)
+  else ()
+    set (RENDER_D3D TRUE)
+  endif ()
+endif ()
 set_option(WASAPI              "Use the Windows WASAPI audio driver" ${WINDOWS})
-set_option(RENDER_D3D          "Enable the Direct3D render driver" ${WINDOWS})
 set_option(VIDEO_VIVANTE       "Use Vivante EGL video driver" ${UNIX_SYS})
 dep_option(VIDEO_VULKAN        "Enable Vulkan support" ON "ANDROID OR APPLE OR LINUX OR WINDOWS" OFF)
 set_option(VIDEO_KMSDRM        "Use KMS DRM video driver" ${UNIX_SYS})
@@ -353,23 +378,25 @@ dep_option(SDL_STATIC_PIC      "Static version of the library should be built wi
 set_option(SDL_TEST            "Build the test directory" OFF)
 
 # General source files
-file(GLOB SOURCE_FILES
+set (SOURCE_FILE_PATTERNS
   ${SDL2_SOURCE_DIR}/src/*.c
   ${SDL2_SOURCE_DIR}/src/atomic/*.c
-  ${SDL2_SOURCE_DIR}/src/audio/*.c
-  ${SDL2_SOURCE_DIR}/src/cpuinfo/*.c
-  ${SDL2_SOURCE_DIR}/src/dynapi/*.c
-  ${SDL2_SOURCE_DIR}/src/events/*.c
-  ${SDL2_SOURCE_DIR}/src/file/*.c
+# Urho3D - we always disable dynamic API, so commented out ${SDL2_SOURCE_DIR}/src/dynapi/*.c
   ${SDL2_SOURCE_DIR}/src/libm/*.c
-  ${SDL2_SOURCE_DIR}/src/render/*.c
-  ${SDL2_SOURCE_DIR}/src/render/*/*.c
   ${SDL2_SOURCE_DIR}/src/stdlib/*.c
   ${SDL2_SOURCE_DIR}/src/thread/*.c
-  ${SDL2_SOURCE_DIR}/src/timer/*.c
-  ${SDL2_SOURCE_DIR}/src/video/*.c
-  ${SDL2_SOURCE_DIR}/src/video/yuv2rgb/*.c)
-
+# Urho3D - exclude source files from disabled subsystems, except SDL_ATOMIC, SDL_THREADS and SDL_TIMERS as SDL always needs them even when they may be just generic or dummy implementations
+foreach (_SUB AUDIO CPUINFO EVENTS FILE HAPTIC JOYSTICK POWER RENDER VIDEO)
+  string (TOLOWER ${_SUB} _DIR)
+  if (${SDL_${_SUB}})
+    list (APPEND SOURCE_FILE_PATTERNS ${SDL2_SOURCE_DIR}/src/${_DIR}/*.c)
+  endif ()
+endforeach ()
+if (SDL_RENDER)
+  list (APPEND ${SDL2_SOURCE_DIR}/src/render/*/*.c)   # Recurse one more level
+endif ()
+file(GLOB SOURCE_FILES ${SOURCE_FILE_PATTERNS})
+  ${SDL2_SOURCE_DIR}/src/timer/*.c)
 
 if(ASSERTIONS STREQUAL "auto")
   # Do nada - use optimization settings to determine the assertion level
@@ -401,6 +428,8 @@ if(USE_GCC OR USE_CLANG)
   if(HAVE_GCC_WALL)
     list(APPEND EXTRA_CFLAGS "-Wall")
     if(HAIKU)
+      # Urho3D - TODO - since we do not support HAIKU for now, we can leave the cflags configuration here
+      #          However, when we do then it must be moved to our common module and/or just commented out
       set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wno-multichar")
     endif()
   endif()
@@ -439,38 +468,24 @@ if(USE_GCC OR USE_CLANG)
     endif()
   endif()
 
-  set(CMAKE_REQUIRED_FLAGS "-mpreferred-stack-boundary=2")
+  set(CMAKE_REQUIRED_FLAGS "-mpreferred-stack-boundary=2 ${ORIG_CMAKE_REQUIRED_FLAGS}")
   check_c_source_compiles("int x = 0; int main(int argc, char **argv) {}"
     HAVE_GCC_PREFERRED_STACK_BOUNDARY)
   set(CMAKE_REQUIRED_FLAGS ${ORIG_CMAKE_REQUIRED_FLAGS})
 
-  set(CMAKE_REQUIRED_FLAGS "-fvisibility=hidden -Werror")
-  check_c_source_compiles("
-      #if !defined(__GNUC__) || __GNUC__ < 4
-      #error SDL only uses visibility attributes in GCC 4 or newer
-      #endif
-      int main(int argc, char **argv) {}" HAVE_GCC_FVISIBILITY)
-  if(HAVE_GCC_FVISIBILITY)
-    list(APPEND EXTRA_CFLAGS "-fvisibility=hidden")
-  endif()
-  set(CMAKE_REQUIRED_FLAGS ${ORIG_CMAKE_REQUIRED_FLAGS})
+  # Urho3D - we rely on GenerateExportHeader CMake module for configuring GCC/Clang visibility attribute support
 
   check_c_compiler_flag(-Wshadow HAVE_GCC_WSHADOW)
   if(HAVE_GCC_WSHADOW)
     list(APPEND EXTRA_CFLAGS "-Wshadow")
   endif()
 
-  if(APPLE)
-    list(APPEND EXTRA_LDFLAGS "-Wl,-undefined,error")
-    list(APPEND EXTRA_LDFLAGS "-Wl,-compatibility_version,${DYLIB_COMPATIBILITY_VERSION}")
-    list(APPEND EXTRA_LDFLAGS "-Wl,-current_version,${DYLIB_CURRENT_VERSION}")
-  else()
-    set(CMAKE_REQUIRED_FLAGS "-Wl,--no-undefined")
-    check_c_compiler_flag("" HAVE_NO_UNDEFINED)
-    set(CMAKE_REQUIRED_FLAGS ${ORIG_CMAKE_REQUIRED_FLAGS})
-    if(HAVE_NO_UNDEFINED)
-      list(APPEND EXTRA_LDFLAGS "-Wl,--no-undefined")
-    endif()
+  # Urho3D - there is no need to use AppleClang-specific linker flags, also because we have fixed our CMAKE_REQUIRED_FLAGS to make the detection reliable
+  set(CMAKE_REQUIRED_FLAGS "-Wl,--no-undefined ${ORIG_CMAKE_REQUIRED_FLAGS}")
+  check_c_compiler_flag("" HAVE_NO_UNDEFINED)
+  set(CMAKE_REQUIRED_FLAGS ${ORIG_CMAKE_REQUIRED_FLAGS})
+  if(HAVE_NO_UNDEFINED)
+    list(APPEND EXTRA_LDFLAGS "-Wl,--no-undefined")
   endif()
 endif()
 
@@ -480,169 +495,36 @@ if(ASSEMBLY)
     # TODO: Those all seem to be quite GCC specific - needs to be
     # reworked for better compiler support
     set(HAVE_ASSEMBLY TRUE)
-    if(MMX)
-      set(CMAKE_REQUIRED_FLAGS "-mmmx")
-      check_c_source_compiles("
-          #ifdef __MINGW32__
-          #include <_mingw.h>
-          #ifdef __MINGW64_VERSION_MAJOR
-          #include <intrin.h>
-          #else
-          #include <mmintrin.h>
-          #endif
-          #else
-          #include <mmintrin.h>
-          #endif
-          #ifndef __MMX__
-          #error Assembler CPP flag not enabled
-          #endif
-          int main(int argc, char **argv) { }" HAVE_MMX)
-      if(HAVE_MMX)
-        list(APPEND EXTRA_CFLAGS "-mmmx")
-      endif()
-      set(CMAKE_REQUIRED_FLAGS ${ORIG_CMAKE_REQUIRED_FLAGS})
-    endif()
 
-    if(3DNOW)
-      set(CMAKE_REQUIRED_FLAGS "-m3dnow")
-      check_c_source_compiles("
-          #include <mm3dnow.h>
-          #ifndef __3dNOW__
-          #error Assembler CPP flag not enabled
-          #endif
-          int main(int argc, char **argv) {
-            void *p = 0;
-            _m_prefetch(p);
-          }" HAVE_3DNOW)
-      if(HAVE_3DNOW)
-        list(APPEND EXTRA_CFLAGS "-m3dnow")
-      endif()
-      set(CMAKE_REQUIRED_FLAGS ${ORIG_CMAKE_REQUIRED_FLAGS})
-    endif()
+    # Urho3D - move the altivec, mmx, 3dnow, sse, sse2, and sse3 checks to Urho3D common module which then configure the compiler flags globally
 
-    if(SSE)
-      set(CMAKE_REQUIRED_FLAGS "-msse")
-      check_c_source_compiles("
-          #ifdef __MINGW32__
-          #include <_mingw.h>
-          #ifdef __MINGW64_VERSION_MAJOR
-          #include <intrin.h>
-          #else
-          #include <xmmintrin.h>
-          #endif
-          #else
-          #include <xmmintrin.h>
-          #endif
-          #ifndef __SSE__
-          #error Assembler CPP flag not enabled
-          #endif
-          int main(int argc, char **argv) { }" HAVE_SSE)
-      if(HAVE_SSE)
-        list(APPEND EXTRA_CFLAGS "-msse")
-      endif()
-      set(CMAKE_REQUIRED_FLAGS ${ORIG_CMAKE_REQUIRED_FLAGS})
-    endif()
+    # Urho3D - bug fix - do not use "-mfpmath=387" in EXTRA_CFLAGS, instead let the compiler to choose what's the best by itself (i.e. '387' for x86 and 'sse' for x86_64) and also to keep SDL library being built with the same option as Urho3D library and all the other 3rd-party sub-libraries; besides the '387' is invalid when targeting arm64
 
-    if(SSE2)
-      set(CMAKE_REQUIRED_FLAGS "-msse2")
-      check_c_source_compiles("
-          #ifdef __MINGW32__
-          #include <_mingw.h>
-          #ifdef __MINGW64_VERSION_MAJOR
-          #include <intrin.h>
-          #else
-          #include <emmintrin.h>
-          #endif
-          #else
-          #include <emmintrin.h>
-          #endif
-          #ifndef __SSE2__
-          #error Assembler CPP flag not enabled
-          #endif
-          int main(int argc, char **argv) { }" HAVE_SSE2)
-      if(HAVE_SSE2)
-        list(APPEND EXTRA_CFLAGS "-msse2")
-      endif()
-      set(CMAKE_REQUIRED_FLAGS ${ORIG_CMAKE_REQUIRED_FLAGS})
-    endif()
+    # Urho3D - commented out the HAVE_SSEMATH variable as it is not being used anywhere currently; furthermore compiler already emits __SSE_MATH__ or __SSE2_MATH__ as necessary on x86_64 ABI only; so instead of using HAVE_SSEMATH variable, we should actually use the __SSE_MATH__ or __SSE2_MATH__ compiler define if that is the original intention of having this variable
 
-    if(SSE3)
-      set(CMAKE_REQUIRED_FLAGS "-msse3")
-      check_c_source_compiles("
-          #ifdef __MINGW32__
-          #include <_mingw.h>
-          #ifdef __MINGW64_VERSION_MAJOR
-          #include <intrin.h>
-          #else
-          #include <pmmintrin.h>
-          #endif
-          #else
-          #include <pmmintrin.h>
-          #endif
-          #ifndef __SSE3__
-          #error Assembler CPP flag not enabled
-          #endif
-          int main(int argc, char **argv) { }" HAVE_SSE3)
-      if(HAVE_SSE3)
-        list(APPEND EXTRA_CFLAGS "-msse3")
-      endif()
-      set(CMAKE_REQUIRED_FLAGS ${ORIG_CMAKE_REQUIRED_FLAGS})
-    endif()
-
-    if(NOT SSEMATH)
-      if(SSE OR SSE2 OR SSE3)
-        if(USE_GCC)
-          check_c_compiler_flag(-mfpmath=387 HAVE_FP_387)
-          if(HAVE_FP_387)
-            list(APPEND EXTRA_CFLAGS "-mfpmath=387")
-          endif()
-        endif()
-        set(HAVE_SSEMATH TRUE)
-      endif()
-    endif()
-
-    check_include_file("immintrin.h" HAVE_IMMINTRIN_H)
-
-    if(ALTIVEC)
-      set(CMAKE_REQUIRED_FLAGS "-maltivec")
-      check_c_source_compiles("
-          #include <altivec.h>
-          vector unsigned int vzero() {
-              return vec_splat_u32(0);
-          }
-          int main(int argc, char **argv) { }" HAVE_ALTIVEC_H_HDR)
-      check_c_source_compiles("
-          vector unsigned int vzero() {
-              return vec_splat_u32(0);
-          }
-          int main(int argc, char **argv) { }" HAVE_ALTIVEC)
-      set(CMAKE_REQUIRED_FLAGS ${ORIG_CMAKE_REQUIRED_FLAGS})
-      if(HAVE_ALTIVEC OR HAVE_ALTIVEC_H_HDR)
-        set(HAVE_ALTIVEC TRUE) # if only HAVE_ALTIVEC_H_HDR is set
-        list(APPEND EXTRA_CFLAGS "-maltivec")
-        set(SDL_ALTIVEC_BLITTERS 1)
-        if(HAVE_ALTIVEC_H_HDR)
-          set(HAVE_ALTIVEC_H 1)
-        endif()
-      endif()
+    if(URHO3D_ALTIVEC)
+      set(SDL_ALTIVEC_BLITTERS 1)
     endif()
   elseif(MSVC_VERSION GREATER 1500)
     # TODO: SDL_cpuinfo.h needs to support the user's configuration wish
-    # for MSVC - right now it is always activated
-    if(NOT ARCH_64)
-      set(HAVE_MMX TRUE)
-      set(HAVE_3DNOW TRUE)
-    endif()
-    set(HAVE_SSE TRUE)
-    set(HAVE_SSE2 TRUE)
-    set(HAVE_SSE3 TRUE)
+    # Urho3D - move the HAVE_MMX, HAVE_3DNOW, HAVE_SSE, HAVE_SSE2, and HAVE_SSE3 initialization to Urho3D common module
     set(SDL_ASSEMBLY_ROUTINES 1)
   endif()
-# TODO:
-#else()
-#  if(USE_GCC OR USE_CLANG)
-#    list(APPEND EXTRA_CFLAGS "-mno-sse" "-mno-sse2" "-mno-sse3" "-mno-mmx")
-#  endif()
+endif()
+
+# Urho3D - move from Unix platform-specific section below to here
+if(CLOCK_GETTIME)
+  # Urho3D - bug fix - use different variables for different checks because of CMake caches the result variable; this fix the detection on Android platform
+  check_library_exists(rt clock_gettime "" FOUND_CLOCK_GETTIME_IN_RT)
+  if(FOUND_CLOCK_GETTIME_IN_RT)
+    list(APPEND EXTRA_LIBS rt)
+    set(HAVE_CLOCK_GETTIME 1)
+  else()
+    check_library_exists(c clock_gettime "" FOUND_CLOCK_GETTIME_IN_C)
+    if(FOUND_CLOCK_GETTIME_IN_C)
+      set(HAVE_CLOCK_GETTIME 1)
+    endif()
+  endif()
 endif()
 
 # TODO: Can't deactivate on FreeBSD? w/o LIBC, SDL_stdinc.h can't define
@@ -676,7 +558,24 @@ if(LIBC)
     set(STDC_HEADERS 1)
   else()
     set(HAVE_LIBC TRUE)
+    # Urho3D - temporary bug fix - starting since Raspbian Jessie some of the headers are installed in the arch-specific directory and it seems that older CMake (prior to release 3.2.3) does not include this directory by default yet, so we have to do that manually
+    if (RPI AND CMAKE_LIBRARY_ARCHITECTURE)
+      include_directories (${SYSROOT}/usr/include/${CMAKE_LIBRARY_ARCHITECTURE})    # SYSROOT is empty when we are not cross-compiling
+    endif ()
+    # Urho3D - bug fix - when cross-compiling the headers are rooted, either use "--sysroot" compiler flag or use CMAKE_REQUIRED_INCLUDES (e.g. on RPI) to cater for it
+    set (CMAKE_REQUIRED_INCLUDES_SYS_TYPES_SAVED ${CMAKE_REQUIRED_INCLUDES})
+    if (CMAKE_CROSSCOMPILING AND NOT "${CMAKE_C_FLAGS} ${CMAKE_REQUIRED_FLAGS}" MATCHES sysroot)
+      find_path (SYS_TYPES_H_INCLUDE_DIRS NAMES sys/types.h)
+      if (SYS_TYPES_H_INCLUDE_DIRS)
+        # Assume the header search path has not been adjusted elsewhere yet, there is no harm anyway when a same entry is added twice into the list
+        list (APPEND CMAKE_REQUIRED_INCLUDES ${SYS_TYPES_H_INCLUDE_DIRS})
+      endif ()
+    endif ()
     check_include_file(sys/types.h HAVE_SYS_TYPES_H)
+    set (CMAKE_REQUIRED_INCLUDES ${CMAKE_REQUIRED_INCLUDES_SYS_TYPES_SAVED})
+    # Urho3D - no fix required - it seems all the compiler toolchains (native and X-compiling) that have been tested are able to find these headers correctly
+    #          Android NDK is able to find these headers with the help of "--sysroot" compiler flags, while others like MinGW and Linaro GCC for RPI work out of box
+    #          However, AppleClang when targeting iOS platform can only find these headers correctly AFTER applying a CMake hack from our common module to workaround a CMake bug so that try_compile() command works well on iOS platform
     foreach(_HEADER
             stdio.h stdlib.h stddef.h stdarg.h malloc.h memory.h string.h limits.h
             strings.h wchar.h inttypes.h stdint.h ctype.h math.h iconv.h signal.h libunwind.h)
@@ -684,14 +583,16 @@ if(LIBC)
       string(REPLACE "." "_" _HAVE_H ${_UPPER})
       check_include_file("${_HEADER}" ${_HAVE_H})
     endforeach()
-
-    check_include_files("dlfcn.h;stdint.h;stddef.h;inttypes.h;stdlib.h;strings.h;string.h;float.h" STDC_HEADERS)
-    check_type_size("size_t" SIZEOF_SIZE_T)
+    # Urho3D - bug fix - MinGW has standard-C headers, except dlfcn.h
+    set (CHECK_STDC_HEADERS stdint.h stddef.h inttypes.h stdlib.h strings.h string.h float.h)
+    if (NOT MINGW)
+      list (APPEND CHECK_STDC_HEADERS dlfcn.h)
+    endif ()
+    check_include_files("${CHECK_STDC_HEADERS}" STDC_HEADERS)   # Stringify the INCLUDE list variable as this macro does not expect to receive a list
+    # Urho3D - bug fix - commented out initialization of SIZEOF_SIZE_T as it does appear to be used anywhere in the code and it has caused problem to Emscripten build (we could have fixed the problem other way but this is cleaner)
     check_symbol_exists(M_PI math.h HAVE_M_PI)
-    # TODO: refine the mprotect check
-    check_c_source_compiles("#include <sys/types.h>
-                             #include <sys/mman.h>
-                             int main() { }" HAVE_MPROTECT)
+    # Urho3D - for consistency sake use check_include_file() to check for HAVE_MPROTECT
+    check_include_file (sys/mman.h HAVE_MPROTECT)
     foreach(_FN
             strtod malloc calloc realloc free getenv setenv putenv unsetenv
             qsort abs bcopy memset memcpy memmove memcmp strlen strlcpy strlcat
@@ -726,13 +627,13 @@ if(LIBC)
       set(HAVE_ICONV 1)
     endif()
 
-    if(NOT APPLE)
-      check_include_file(alloca.h HAVE_ALLOCA_H)
-      check_function_exists(alloca HAVE_ALLOCA)
-    else()
-      set(HAVE_ALLOCA_H 1)
-      set(HAVE_ALLOCA 1)
-    endif()
+    # Urho3D - bug fix - cannot use check_function_exists() with alloca; with this bug fixed, the same check should work on Apple too so no more hardcoding
+    check_include_file(alloca.h HAVE_ALLOCA_H)
+    if (HAVE_ALLOCA_H)
+      check_c_source_compiles ("
+        #include <alloca.h>
+        int main(int argc, char** argv) { alloca(0); }" HAVE_ALLOCA)
+    endif ()
 
     check_struct_has_member("struct sigaction" "sa_sigaction" "signal.h" HAVE_SA_SIGACTION)
   endif()
@@ -751,34 +652,9 @@ foreach(_SUB ${SDL_SUBSYSTEMS})
     set(SDL_${_OPT}_DISABLED 1)
   endif()
 endforeach()
-if(SDL_JOYSTICK)
-  file(GLOB JOYSTICK_SOURCES ${SDL2_SOURCE_DIR}/src/joystick/*.c)
-  set(SOURCE_FILES ${SOURCE_FILES} ${JOYSTICK_SOURCES})
-endif()
-if(SDL_HAPTIC)
-  if(NOT SDL_JOYSTICK)
-    # Haptic requires some private functions from the joystick subsystem.
-    message_error("SDL_HAPTIC requires SDL_JOYSTICK, which is not enabled")
-  endif()
-  file(GLOB HAPTIC_SOURCES ${SDL2_SOURCE_DIR}/src/haptic/*.c)
-  set(SOURCE_FILES ${SOURCE_FILES} ${HAPTIC_SOURCES})
-endif()
-if(SDL_SENSOR)
-  file(GLOB SENSOR_SOURCES ${SDL2_SOURCE_DIR}/src/sensor/*.c)
-  set(SOURCE_FILES ${SOURCE_FILES} ${SENSOR_SOURCES})
-endif()
-if(SDL_POWER)
-  file(GLOB POWER_SOURCES ${SDL2_SOURCE_DIR}/src/power/*.c)
-  set(SOURCE_FILES ${SOURCE_FILES} ${POWER_SOURCES})
-endif()
-# TODO: in configure.ac, the test for LOADSO and SDL_DLOPEN is a bit weird:
-# if LOADSO is not wanted, SDL_LOADSO_DISABLED is set
-# If however on Unix or APPLE dlopen() is detected via CheckDLOPEN(),
-# SDL_LOADSO_DISABLED will not be set, regardless of the LOADSO settings
 
 # General SDL subsystem options, valid for all platforms
 if(SDL_AUDIO)
-  # CheckDummyAudio/CheckDiskAudio - valid for all platforms
   if(DUMMYAUDIO)
     set(SDL_AUDIO_DRIVER_DUMMY 1)
     file(GLOB DUMMYAUDIO_SOURCES ${SDL2_SOURCE_DIR}/src/audio/dummy/*.c)
@@ -792,14 +668,6 @@ if(SDL_AUDIO)
     set(HAVE_DISKAUDIO TRUE)
   endif()
 endif()
-
-if(SDL_DLOPEN)
-  # Relevant for Unix/Darwin only
-  if(UNIX OR APPLE)
-    CheckDLOPEN()
-  endif()
-endif()
-
 if(SDL_VIDEO)
   if(VIDEO_DUMMY)
     set(SDL_VIDEO_DRIVER_DUMMY 1)
@@ -809,7 +677,23 @@ if(SDL_VIDEO)
     set(HAVE_SDL_VIDEO TRUE)
   endif()
 endif()
+if(SDL_DLOPEN)
+  # Urho3D - remove duplicate/redundant check as we have already ensure that this build option is made available for the correct platforms only
+  CheckDLOPEN()
+endif()
+# Urho3D - move from Unix platform-specifc block to here as this timer implementation is applicable for Android and Emscripten as well
+if(SDL_TIMERS AND UNIX AND NOT HAIKU)   # Haiku has its own timer implementation, so exclude it explicitly
+  set(SDL_TIMER_UNIX 1)
+  file(GLOB TIMER_SOURCES ${SDL2_SOURCE_DIR}/src/timer/unix/*.c)
+  set(SOURCE_FILES ${SOURCE_FILES} ${TIMER_SOURCES})
+  set(HAVE_SDL_TIMERS TRUE)
+endif()
+if (SDL_THREADS)
+  CheckPTHREAD()
+endif ()
 
+# Platform-specific options and settings
+# Urho3D - rearrange the if-elseif blocks (specific case before generic case)
 if(ANDROID)
   file(GLOB ANDROID_CORE_SOURCES ${SDL2_SOURCE_DIR}/src/core/android/*.c)
   set(SOURCE_FILES ${SOURCE_FILES} ${ANDROID_CORE_SOURCES})
@@ -823,8 +707,7 @@ if(ANDROID)
     set_source_files_properties(${SDL2_SOURCE_DIR}/src/atomic/SDL_spinlock.c PROPERTIES COMPILE_FLAGS -marm)
   endif()
 
-  file(GLOB ANDROID_MAIN_SOURCES ${SDL2_SOURCE_DIR}/src/main/android/*.c)
-  set(SDLMAIN_SOURCES ${SDLMAIN_SOURCES} ${ANDROID_MAIN_SOURCES})
+  # Urho3D - bug fix - src/main/android/SDL_android_main.c is no longer required since release 2.0.6
 
   if(SDL_AUDIO)
     set(SDL_AUDIO_DRIVER_ANDROID 1)
@@ -850,23 +733,11 @@ if(ANDROID)
     set(SOURCE_FILES ${SOURCE_FILES} ${ANDROID_JOYSTICK_SOURCES})
     set(HAVE_SDL_JOYSTICK TRUE)
   endif()
-  if(SDL_LOADSO)
-    set(SDL_LOADSO_DLOPEN 1)
-    file(GLOB LOADSO_SOURCES ${SDL2_SOURCE_DIR}/src/loadso/dlopen/*.c)
-    set(SOURCE_FILES ${SOURCE_FILES} ${LOADSO_SOURCES})
-    set(HAVE_SDL_LOADSO TRUE)
-  endif()
   if(SDL_POWER)
     set(SDL_POWER_ANDROID 1)
     file(GLOB ANDROID_POWER_SOURCES ${SDL2_SOURCE_DIR}/src/power/android/*.c)
     set(SOURCE_FILES ${SOURCE_FILES} ${ANDROID_POWER_SOURCES})
     set(HAVE_SDL_POWER TRUE)
-  endif()
-  if(SDL_TIMERS)
-    set(SDL_TIMER_UNIX 1)
-    file(GLOB TIMER_SOURCES ${SDL2_SOURCE_DIR}/src/timer/unix/*.c)
-    set(SOURCE_FILES ${SOURCE_FILES} ${TIMER_SOURCES})
-    set(HAVE_SDL_TIMERS TRUE)
   endif()
   if(SDL_SENSOR)
     set(SDL_SENSOR_ANDROID 1)
@@ -889,10 +760,7 @@ if(ANDROID)
 
     #enable gles
     if(VIDEO_OPENGLES)
-      set(SDL_VIDEO_OPENGL_EGL 1)
-      set(HAVE_VIDEO_OPENGLES TRUE)
-      set(SDL_VIDEO_OPENGL_ES2 1)
-      set(SDL_VIDEO_RENDER_OGL_ES2 1)
+      CheckOpenGLES()
 
       find_library(OpenGLES1_LIBRARY GLESv1_CM)
       find_library(OpenGLES2_LIBRARY GLESv2)
@@ -913,13 +781,7 @@ if(ANDROID)
       message(STATUS "Vulkan doesn't work on this configuration")
     endif()
   endif()
-
-  CheckPTHREAD()
-
-endif()
-
-# Platform-specific options and settings
-if(EMSCRIPTEN)
+elseif(EMSCRIPTEN)
   # Hide noisy warnings that intend to aid mostly during initial stages of porting a new
   # project. Uncomment at will for verbose cross-compiling -I/../ path info.
   add_definitions(-Wno-warn-absolute-paths)
@@ -947,16 +809,6 @@ if(EMSCRIPTEN)
     set(SOURCE_FILES ${SOURCE_FILES} ${EM_POWER_SOURCES})
     set(HAVE_SDL_POWER TRUE)
   endif()
-  if(SDL_TIMERS)
-    set(SDL_TIMER_UNIX 1)
-    file(GLOB TIMER_SOURCES ${SDL2_SOURCE_DIR}/src/timer/unix/*.c)
-    set(SOURCE_FILES ${SOURCE_FILES} ${TIMER_SOURCES})
-    set(HAVE_SDL_TIMERS TRUE)
-
-    if(CLOCK_GETTIME)
-      set(HAVE_CLOCK_GETTIME 1)
-    endif()
-  endif()
   if(SDL_VIDEO)
     set(SDL_VIDEO_DRIVER_EMSCRIPTEN 1)
     file(GLOB EM_VIDEO_SOURCES ${SDL2_SOURCE_DIR}/src/video/emscripten/*.c)
@@ -965,13 +817,191 @@ if(EMSCRIPTEN)
 
     #enable gles
     if(VIDEO_OPENGLES)
-      set(SDL_VIDEO_OPENGL_EGL 1)
-      set(HAVE_VIDEO_OPENGLES TRUE)
-      set(SDL_VIDEO_OPENGL_ES2 1)
-      set(SDL_VIDEO_RENDER_OGL_ES2 1)
+      CheckOpenGLES()
     endif()
   endif()
-elseif(UNIX AND NOT APPLE AND NOT ANDROID)
+elseif(APPLE)
+  # TODO: rework this all for proper MacOS X, iOS and Darwin support
+
+  # We always need these libs on macOS at the moment.
+  # !!! FIXME: we need Carbon for some very old API calls in
+  # !!! FIXME:  src/video/cocoa/SDL_cocoakeyboard.c, but we should figure out
+  # !!! FIXME:  how to dump those.
+  if(NOT IOS AND NOT TVOS)
+    set(SDL_FRAMEWORK_COCOA 1)
+    set(SDL_FRAMEWORK_CARBON 1)
+  endif()
+
+  # Requires the darwin file implementation
+  if(SDL_FILE)
+    file(GLOB EXTRA_SOURCES ${SDL2_SOURCE_DIR}/src/file/cocoa/*.m)
+    set(SOURCE_FILES ${EXTRA_SOURCES} ${SOURCE_FILES})
+    set(HAVE_SDL_FILE TRUE)
+    # !!! FIXME: why is COREVIDEO inside this if() block?
+    set(SDL_FRAMEWORK_COREVIDEO 1)
+  else()
+    message_error("SDL_FILE must be enabled to build on MacOS X")
+  endif()
+
+  if(SDL_AUDIO)
+    set(SDL_AUDIO_DRIVER_COREAUDIO 1)
+    file(GLOB AUDIO_SOURCES ${SDL2_SOURCE_DIR}/src/audio/coreaudio/*.m)
+    set(SOURCE_FILES ${SOURCE_FILES} ${AUDIO_SOURCES})
+    set(HAVE_SDL_AUDIO TRUE)
+    set(SDL_FRAMEWORK_COREAUDIO 1)
+    set(SDL_FRAMEWORK_AUDIOTOOLBOX 1)
+  endif()
+
+  if(SDL_JOYSTICK)
+    # Urho3D - bug fix - make it work for iOS platform
+    if (IOS)
+      set (SDL_JOYSTICK_MFI 1)
+      file (GLOB JOYSTICK_SOURCES ${SDL2_SOURCE_DIR}/src/joystick/iphoneos/*.m ${SDL2_SOURCE_DIR}/src/joystick/steam/*.c)
+    else ()
+      set(SDL_JOYSTICK_IOKIT 1)
+      file(GLOB JOYSTICK_SOURCES ${SDL2_SOURCE_DIR}/src/joystick/darwin/*.c)
+      set(SDL_FRAMEWORK_IOKIT 1)
+      set(SDL_FRAMEWORK_FF 1)
+    endif ()
+    set(SOURCE_FILES ${SOURCE_FILES} ${JOYSTICK_SOURCES})
+    set_source_files_properties(${JOYSTICK_SOURCES} PROPERTIES LANGUAGE C)
+    set(HAVE_SDL_JOYSTICK TRUE)
+  endif()
+
+  if(SDL_HAPTIC)
+    # Urho3d - bug fix - make it work for iOS platform
+    if (IOS)
+      set (SDL_HAPTIC_DUMMY 1)
+      file (GLOB HAPTIC_SOURCES ${SDL2_SOURCE_DIR}/src/haptic/dummy/*.c)
+    else ()
+      set(SDL_HAPTIC_IOKIT 1)
+      file(GLOB HAPTIC_SOURCES ${SDL2_SOURCE_DIR}/src/haptic/darwin/*.c)
+      set(SDL_FRAMEWORK_IOKIT 1)
+      set(SDL_FRAMEWORK_FF 1)
+    endif ()
+    set(SOURCE_FILES ${SOURCE_FILES} ${HAPTIC_SOURCES})
+    set(HAVE_SDL_HAPTIC TRUE)
+    if(NOT SDL_JOYSTICK)
+      message(FATAL_ERROR "SDL_HAPTIC requires SDL_JOYSTICK to be enabled")
+    endif()
+  endif()
+
+  if(SDL_POWER)
+    # Urho3d - bug fix - make it work for iOS platform
+    if (IOS)
+      set (SDL_POWER_UIKIT 1)
+      file (GLOB POWER_SOURCES ${SDL2_SOURCE_DIR}/src/power/uikit/*.m)
+    else ()
+      set(SDL_POWER_MACOSX 1)
+      file(GLOB POWER_SOURCES ${SDL2_SOURCE_DIR}/src/power/macosx/*.c)
+      set(SDL_FRAMEWORK_IOKIT 1)
+    endif ()
+    set(SOURCE_FILES ${SOURCE_FILES} ${POWER_SOURCES})
+    set_source_files_properties(${POWER_SOURCES} PROPERTIES LANGUAGE C)
+    set(HAVE_SDL_POWER TRUE)
+  endif()
+
+  if(SDL_FILESYSTEM)
+    set(SDL_FILESYSTEM_COCOA 1)
+    file(GLOB FILESYSTEM_SOURCES ${SDL2_SOURCE_DIR}/src/filesystem/cocoa/*.m)
+    set(SOURCE_FILES ${SOURCE_FILES} ${FILESYSTEM_SOURCES})
+    set(HAVE_SDL_FILESYSTEM TRUE)
+  endif()
+
+  # Actually load the frameworks at the end so we don't duplicate include.
+  # Urho3D - TODO - this list in complete, do this when we refactor the library dependency handling
+  if(SDL_FRAMEWORK_COREVIDEO)
+    find_library(COREVIDEO CoreVideo)
+    list(APPEND EXTRA_LIBS ${COREVIDEO})
+  endif()
+  if(SDL_FRAMEWORK_COCOA)
+    find_library(COCOA_LIBRARY Cocoa)
+    list(APPEND EXTRA_LIBS ${COCOA_LIBRARY})
+  endif()
+  if(SDL_FRAMEWORK_IOKIT)
+    find_library(IOKIT IOKit)
+    list(APPEND EXTRA_LIBS ${IOKIT})
+  endif()
+  if(SDL_FRAMEWORK_FF)
+    find_library(FORCEFEEDBACK ForceFeedback)
+    list(APPEND EXTRA_LIBS ${FORCEFEEDBACK})
+  endif()
+  if(SDL_FRAMEWORK_CARBON)
+    find_library(CARBON_LIBRARY Carbon)
+    list(APPEND EXTRA_LIBS ${CARBON_LIBRARY})
+  endif()
+  if(SDL_FRAMEWORK_COREAUDIO)
+    find_library(COREAUDIO CoreAudio)
+    list(APPEND EXTRA_LIBS ${COREAUDIO})
+  endif()
+  if(SDL_FRAMEWORK_AUDIOTOOLBOX)
+    find_library(AUDIOTOOLBOX AudioToolbox)
+    list(APPEND EXTRA_LIBS ${AUDIOTOOLBOX})
+  endif()
+
+  # Urho3d - bug fix - make it work for iOS platform
+  if(SDL_VIDEO)
+    if (VIDEO_COCOA)
+      # Urho3D - these are moved from commented CheckCOCOA macro
+      set(SDL_VIDEO_DRIVER_COCOA 1)
+      file(GLOB COCOA_SOURCES ${SDL2_SOURCE_DIR}/src/video/cocoa/*.m)
+      set(SOURCE_FILES ${SOURCE_FILES} ${COCOA_SOURCES})
+      set(HAVE_SDL_VIDEO TRUE)
+    elseif (IOS OR TVOS)
+      set (SDL_VIDEO_DRIVER_UIKIT 1)
+      file (GLOB UIKIT_SOURCES ${SDL2_SOURCE_DIR}/src/video/uikit/*.m)
+      set (SOURCE_FILES ${SOURCE_FILES} ${UIKIT_SOURCES})
+      set (HAVE_SDL_VIDEO TRUE)
+    endif ()
+    if (IOS OR TVOS)
+      set (SDL_VIDEO_OPENGL_ES 1)
+      set (SDL_VIDEO_OPENGL_ES2 1)
+      set (SDL_VIDEO_RENDER_OGL_ES 1)
+      set (SDL_VIDEO_RENDER_OGL_ES2 1)
+      set (HAVE_VIDEO_OPENGLES TRUE)
+    else ()
+      CheckOpenGL ()
+      CheckOpenGLES ()
+    endif ()
+  endif()
+
+  if (IOS OR TVOS)
+    # Enable iPhone keyboard support
+    set (SDL_IPHONE_KEYBOARD 1)
+    # Enable iOS extended launch screen
+    set (SDL_IPHONE_LAUNCHSCREEN 1)
+    # Set max recognized G-force from accelerometer, see src/joystick/uikit/SDL_sysjoystick.m for notes on why this is needed
+    set (SDL_IPHONE_MAX_GFORCE 5.0)
+  endif ()
+elseif(HAIKU)
+  if(SDL_VIDEO)
+    set(SDL_VIDEO_DRIVER_HAIKU 1)
+    file(GLOB HAIKUVIDEO_SOURCES ${SDL2_SOURCE_DIR}/src/video/haiku/*.c)
+    set(SOURCE_FILES ${SOURCE_FILES} ${HAIKUVIDEO_SOURCES})
+    set(HAVE_SDL_VIDEO TRUE)
+
+    set(SDL_FILESYSTEM_HAIKU 1)
+    file(GLOB FILESYSTEM_SOURCES ${SDL2_SOURCE_DIR}/src/filesystem/haiku/*.cc)
+    set(SOURCE_FILES ${SOURCE_FILES} ${FILESYSTEM_SOURCES})
+    set(HAVE_SDL_FILESYSTEM TRUE)
+
+    if(SDL_TIMERS)
+      set(SDL_TIMER_HAIKU 1)
+      file(GLOB TIMER_SOURCES ${SDL2_SOURCE_DIR}/src/timer/haiku/*.c)
+      set(SOURCE_FILES ${SOURCE_FILES} ${TIMER_SOURCES})
+      set(HAVE_SDL_TIMERS TRUE)
+    endif(SDL_TIMERS)
+
+    if(VIDEO_OPENGL)
+      # TODO: Use FIND_PACKAGE(OpenGL) instead
+      set(SDL_VIDEO_OPENGL 1)
+      set(SDL_VIDEO_OPENGL_BGL 1)
+      set(SDL_VIDEO_RENDER_OGL 1)
+      list(APPEND EXTRA_LIBS GL)
+      set(HAVE_VIDEO_OPENGL TRUE)
+    endif()
+  endif()
+elseif(UNIX)    # Urho3D - at this point both UNIX and UNIX_SYS should be equivalent
   if(SDL_AUDIO)
     if(SYSV5 OR SOLARIS OR HPUX)
         set(SDL_AUDIO_DRIVER_SUNAUDIO 1)
@@ -1006,17 +1036,16 @@ elseif(UNIX AND NOT APPLE AND NOT ANDROID)
     CheckRPI()
     CheckX11()
     CheckDirectFB()
-    CheckOpenGLX11()
-    CheckOpenGLESX11()
+    # Urho3D - raname macros
+    CheckOpenGL()
+    CheckOpenGLES()
     CheckWayland()
     CheckVivante()
     CheckKMSDRM()
   endif()
 
-  if(UNIX)
-    file(GLOB CORE_UNIX_SOURCES ${SDL2_SOURCE_DIR}/src/core/unix/*.c)
-    set(SOURCE_FILES ${SOURCE_FILES} ${CORE_UNIX_SOURCES})
-  endif()
+  file(GLOB CORE_UNIX_SOURCES ${SDL2_SOURCE_DIR}/src/core/unix/*.c)
+  set(SOURCE_FILES ${SOURCE_FILES} ${CORE_UNIX_SOURCES})
 
   if(LINUX)
     check_c_source_compiles("
@@ -1055,82 +1084,80 @@ elseif(UNIX AND NOT APPLE AND NOT ANDROID)
       set(SDL_INPUT_LINUXKD 1)
     endif()
 
+    # Urho3D - bug fix - when cross-compiling the headers are rooted, either use "--sysroot" compiler flag or use CMAKE_REQUIRED_INCLUDES (e.g. on RPI) to cater for it
+    set (CMAKE_REQUIRED_INCLUDES_UDEV_DBUS_SAVED ${CMAKE_REQUIRED_INCLUDES})
+    if (CMAKE_CROSSCOMPILING AND NOT "${CMAKE_C_FLAGS} ${CMAKE_REQUIRED_FLAGS}" MATCHES sysroot)
+      find_path (UDEV_H_INCLUDE_DIRS libudev.h)
+      if (UDEV_H_INCLUDE_DIRS)
+        list (APPEND CMAKE_REQUIRED_INCLUDES ${UDEV_H_INCLUDE_DIRS} ${SYS_TYPES_H_INCLUDE_DIRS})
+      endif ()
+    endif ()
     check_include_file("libudev.h" HAVE_LIBUDEV_H)
+    if (HAVE_LIBUDEV_H AND UDEV_H_INCLUDE_DIRS)
+      include_directories (${UDEV_H_INCLUDE_DIRS})
+    endif ()
+    # Urho3D - bug fix - dbus/dbus.h is installed under path suffix 'dbus-1.0', so the following find_path() is needed even when not cross-compiling
+    find_path (DBUS_H_INCLUDE_DIRS NAMES dbus/dbus.h PATH_SUFFIXES dbus-1.0)
+    # Cater for both multilib and multiarch, native and cross-compiling build
+    if (URHO3D_64BIT)
+      set (DBUS_INC_SEARCH_PATH /usr/lib64/dbus-1.0/include)
+    else ()
+      set (DBUS_INC_SEARCH_PATH /usr/lib/dbus-1.0/include)
+    endif ()
+    find_path (DBUS_ARCH_DEPS_H_INCLUDE_DIRS NAMES dbus/dbus-arch-deps.h PATHS ${DBUS_INC_SEARCH_PATH} /usr/lib/${CMAKE_LIBRARY_ARCHITECTURE}/dbus-1.0/include)
+    set (CMAKE_REQUIRED_INCLUDES ${CMAKE_REQUIRED_INCLUDES_UDEV_DBUS_SAVED} ${DBUS_H_INCLUDE_DIRS} ${DBUS_ARCH_DEPS_H_INCLUDE_DIRS})
+    check_include_file("dbus/dbus.h" HAVE_DBUS_DBUS_H)
+    if (HAVE_DBUS_DBUS_H AND DBUS_H_INCLUDE_DIRS AND DBUS_ARCH_DEPS_H_INCLUDE_DIRS)
+      include_directories (${DBUS_H_INCLUDE_DIRS} ${DBUS_ARCH_DEPS_H_INCLUDE_DIRS})
+      list(APPEND EXTRA_LIBS dbus-1)
+    endif ()
+    set (CMAKE_REQUIRED_INCLUDES ${CMAKE_REQUIRED_INCLUDES_UDEV_DBUS_SAVED})
 
-    if(PKG_CONFIG_FOUND)
-      pkg_search_module(DBUS dbus-1 dbus)
-      if(DBUS_FOUND)
-        set(HAVE_DBUS_DBUS_H TRUE)
-        include_directories(${DBUS_INCLUDE_DIRS})
-        list(APPEND EXTRA_LIBS ${DBUS_LIBRARIES})
-      endif()
-
-      pkg_search_module(IBUS ibus-1.0 ibus)
-      if(IBUS_FOUND)
-        set(HAVE_IBUS_IBUS_H TRUE)
-        include_directories(${IBUS_INCLUDE_DIRS})
-        list(APPEND EXTRA_LIBS ${IBUS_LIBRARIES})
-      endif()
-      if(HAVE_LIBUNWIND_H)
-        # We've already found the header, so REQUIRE the lib to be present
-        pkg_search_module(UNWIND REQUIRED libunwind)
-        pkg_search_module(UNWIND_GENERIC REQUIRED libunwind-generic)
-        list(APPEND EXTRA_LIBS ${UNWIND_LIBRARIES} ${UNWIND_GENERIC_LIBRARIES})
-      endif()
-    endif()
-
+    # Urho3D - TODO - add ibus and fcitx support
     check_include_file("fcitx/frontend.h" HAVE_FCITX_FRONTEND_H)
-  endif()
 
-  if(INPUT_TSLIB)
-    check_c_source_compiles("
-        #include \"tslib.h\"
-        int main(int argc, char** argv) { }" HAVE_INPUT_TSLIB)
-    if(HAVE_INPUT_TSLIB)
-      set(SDL_INPUT_TSLIB 1)
-      list(APPEND EXTRA_LIBS ts)
-    endif()
-  endif()
-
-  if(SDL_JOYSTICK)
-    CheckUSBHID()   # seems to be BSD specific - limit the test to BSD only?
-    if(LINUX AND NOT ANDROID)
-      set(SDL_JOYSTICK_LINUX 1)
-      file(GLOB JOYSTICK_SOURCES ${SDL2_SOURCE_DIR}/src/joystick/linux/*.c ${SDL2_SOURCE_DIR}/src/joystick/steam/*.c)
-      set(SOURCE_FILES ${SOURCE_FILES} ${JOYSTICK_SOURCES})
-      set(HAVE_SDL_JOYSTICK TRUE)
-    endif()
-  endif()
-
-  CheckPTHREAD()
-
-  if(CLOCK_GETTIME)
-    check_library_exists(rt clock_gettime "" FOUND_CLOCK_GETTIME)
-    if(FOUND_CLOCK_GETTIME)
-      list(APPEND EXTRA_LIBS rt)
-      set(HAVE_CLOCK_GETTIME 1)
-    else()
-      check_library_exists(c clock_gettime "" FOUND_CLOCK_GETTIME)
-      if(FOUND_CLOCK_GETTIME)
-        set(HAVE_CLOCK_GETTIME 1)
-      endif()
-    endif()
-  endif()
-
-  check_include_file(linux/version.h HAVE_LINUX_VERSION_H)
-  if(HAVE_LINUX_VERSION_H)
-    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DHAVE_LINUX_VERSION_H")
-  endif()
-
-  if(SDL_POWER)
-    if(LINUX)
+    # Urho3D - bug fix - moved below logic from generic Unix block to Linux-specific block
+    if(SDL_POWER)
       set(SDL_POWER_LINUX 1)
       file(GLOB POWER_SOURCES ${SDL2_SOURCE_DIR}/src/power/linux/*.c)
       set(SOURCE_FILES ${SOURCE_FILES} ${POWER_SOURCES})
       set(HAVE_SDL_POWER TRUE)
     endif()
+    if(SDL_JOYSTICK)
+      set(SDL_JOYSTICK_LINUX 1)
+      file(GLOB JOYSTICK_SOURCES ${SDL2_SOURCE_DIR}/src/joystick/linux/*.c ${SDL2_SOURCE_DIR}/src/joystick/steam/*.c)
+      set(SOURCE_FILES ${SOURCE_FILES} ${JOYSTICK_SOURCES})
+      set(HAVE_SDL_JOYSTICK TRUE)
+    endif()
+  else ()
+    if(SDL_JOYSTICK)
+      CheckUSBHID()   # seems to be BSD specific - limit the test to BSD only?
+    endif()
   endif()
 
+  if(INPUT_TSLIB)
+    # Urho3D - bug fix - when cross-compiling the headers are rooted, either use "--sysroot" compiler flag or use CMAKE_REQUIRED_INCLUDES (e.g. on RPI) to cater for it
+    set (CMAKE_REQUIRED_INCLUDES_TSLIB_SAVED ${CMAKE_REQUIRED_INCLUDES})
+    if (CMAKE_CROSSCOMPILING AND NOT "${CMAKE_C_FLAGS} ${CMAKE_REQUIRED_FLAGS}" MATCHES sysroot)
+      find_path (TSLIB_H_INCLUDE_DIRS NAMES tslib.h)
+      if (TSLIB_H_INCLUDE_DIRS)
+        # Assume the header search path has not been adjusted elsewhere yet, there is no harm anyway when a same entry is added twice into the list
+        list (APPEND CMAKE_REQUIRED_INCLUDES ${TSLIB_H_INCLUDE_DIRS})
+      endif ()
+    endif ()
+    check_include_file (tslib.h HAVE_INPUT_TSLIB)
+    if(HAVE_INPUT_TSLIB)
+      set(SDL_INPUT_TSLIB 1)
+      list(APPEND EXTRA_LIBS ts)
+    endif()
+    set (CMAKE_REQUIRED_INCLUDES ${CMAKE_REQUIRED_INCLUDES_TSLIB_SAVED})
+  endif()
+
+  # Urho3D - move CLOCK_GETTIME detection logic to compiler option evaluation section above
+
+  # Urho3D - commented out setting of HAVE_LINUX_VERSION_H compiler define via cflags as that define is not being used at all, besides we prefer add_definitions()
+
+  # Urho3D - bug fix - do not use Unix filesystem for Android platform (Android platform should not be reaching this if-else block now)
   if(SDL_FILESYSTEM)
     set(SDL_FILESYSTEM_UNIX 1)
     file(GLOB FILESYSTEM_SOURCES ${SDL2_SOURCE_DIR}/src/filesystem/unix/*.c)
@@ -1138,17 +1165,12 @@ elseif(UNIX AND NOT APPLE AND NOT ANDROID)
     set(HAVE_SDL_FILESYSTEM TRUE)
   endif()
 
-  if(SDL_TIMERS)
-    set(SDL_TIMER_UNIX 1)
-    file(GLOB TIMER_SOURCES ${SDL2_SOURCE_DIR}/src/timer/unix/*.c)
-    set(SOURCE_FILES ${SOURCE_FILES} ${TIMER_SOURCES})
-    set(HAVE_SDL_TIMERS TRUE)
-  endif()
+  # Urho3D - move Unix timer to general section above as it can be used for a number of Unix-like platforms
 
   if(RPATH)
     set(SDL_RLD_FLAGS "")
     if(BSDI OR FREEBSD OR LINUX OR NETBSD)
-      set(CMAKE_REQUIRED_FLAGS "-Wl,--enable-new-dtags")
+      set(CMAKE_REQUIRED_FLAGS "-Wl,--enable-new-dtags ${ORIG_CMAKE_REQUIRED_FLAGS}")
       check_c_compiler_flag("" HAVE_ENABLE_NEW_DTAGS)
       set(CMAKE_REQUIRED_FLAGS ${ORIG_CMAKE_REQUIRED_FLAGS})
       if(HAVE_ENABLE_NEW_DTAGS)
@@ -1159,75 +1181,32 @@ elseif(UNIX AND NOT APPLE AND NOT ANDROID)
     elseif(SOLARIS)
       set(SDL_RLD_FLAGS "-R\${libdir}")
     endif()
-    set(CMAKE_BUILD_WITH_INSTALL_RPATH TRUE)
+    # Urho3D - commented out RPATH setup as we have configured ours globally
     set(HAVE_RPATH TRUE)
   endif()
 
 elseif(WINDOWS)
-  find_program(WINDRES windres)
+  # Urho3D - bug fix - when using MinGW in cross-compiling build, the windres tool is being prefixed as other GCC cross-compiling tools
+  if (MINGW)
+    if (CMAKE_CROSSCOMPILING)
+      set (WINDRES ${CMAKE_RC_COMPILER})  # The CMAKE_RC_COMPILER variable is already initialized in our CMake/MinGW toolchain file
+    else ()
+      find_program(WINDRES windres)
+    endif ()
+  endif ()
 
-  check_c_source_compiles("
-    #include <windows.h>
-    int main(int argc, char **argv) { }" HAVE_WIN32_CC)
+  # Urho3D - replace the windows.h check by using check_include_file() instead of check_c_source_files()
+  check_include_file (windows.h HAVE_WIN32_CC)
 
   file(GLOB CORE_SOURCES ${SDL2_SOURCE_DIR}/src/core/windows/*.c)
   set(SOURCE_FILES ${SOURCE_FILES} ${CORE_SOURCES})
 
-  if(MSVC)
-    # Prevent codegen that would use the VC runtime libraries.
-    set_property(DIRECTORY . APPEND PROPERTY COMPILE_OPTIONS "/GS-")
-    if(NOT ARCH_64)
-      set_property(DIRECTORY . APPEND PROPERTY COMPILE_OPTIONS "/arch:SSE")
-    endif()
-  endif()
+  # Urho3D - commented out MSVC-specific compiler flags setup as we have configured MSVC compiler flags globally in Urho3D common module
 
   # Check for DirectX
   if(DIRECTX)
-    if(DEFINED MSVC_VERSION AND NOT ${MSVC_VERSION} LESS 1700)
-        set(USE_WINSDK_DIRECTX TRUE)
-    endif()
-    if(NOT CMAKE_COMPILER_IS_MINGW AND NOT USE_WINSDK_DIRECTX)
-      if("$ENV{DXSDK_DIR}" STREQUAL "")
-        message_error("DIRECTX requires the \$DXSDK_DIR environment variable to be set")
-      endif()
-      set(CMAKE_REQUIRED_FLAGS "/I\"$ENV{DXSDK_DIR}\\Include\"")
-    endif()
-
-    if(HAVE_WIN32_CC)
-      # xinput.h may need windows.h, but doesn't include it itself.
-      check_c_source_compiles("
-        #include <windows.h>
-        #include <xinput.h>
-        int main(int argc, char **argv) { }" HAVE_XINPUT_H)
-      check_c_source_compiles("
-        #include <windows.h>
-        #include <xinput.h>
-        XINPUT_GAMEPAD_EX x1;
-        int main(int argc, char **argv) { }" HAVE_XINPUT_GAMEPAD_EX)
-      check_c_source_compiles("
-        #include <windows.h>
-        #include <xinput.h>
-        XINPUT_STATE_EX s1;
-        int main(int argc, char **argv) { }" HAVE_XINPUT_STATE_EX)
-    else()
-      check_include_file(xinput.h HAVE_XINPUT_H)
-    endif()
-
-    check_include_file(d3d9.h HAVE_D3D_H)
-    check_include_file(d3d11_1.h HAVE_D3D11_H)
-    check_include_file(ddraw.h HAVE_DDRAW_H)
-    check_include_file(dsound.h HAVE_DSOUND_H)
-    check_include_file(dinput.h HAVE_DINPUT_H)
-    check_include_file(dxgi.h HAVE_DXGI_H)
-    if(HAVE_D3D_H OR HAVE_D3D11_H OR HAVE_DDRAW_H OR HAVE_DSOUND_H OR HAVE_DINPUT_H)
-      set(HAVE_DIRECTX TRUE)
-      if(NOT CMAKE_COMPILER_IS_MINGW AND NOT USE_WINSDK_DIRECTX)
-      # TODO: change $ENV{DXSDL_DIR} to get the path from the include checks
-        link_directories($ENV{DXSDK_DIR}\\lib\\${PROCESSOR_ARCH})
-        include_directories($ENV{DXSDK_DIR}\\Include)
-      endif()
-    endif()
-    set(CMAKE_REQUIRED_FLAGS ${ORIG_CMAKE_REQUIRED_FLAGS})
+    # Urho3D - bug fix - use our own FindDirectX.cmake module which does not rely on DXSDK_DIR environment variable directly when DirectX SDK is being used
+    # Urho3D - TODO - move the find_package(DirectX) call from Urho3D common module to here later after we have refactored the library dependency handling
   endif()
 
   # headers needed elsewhere ...
@@ -1272,6 +1251,8 @@ elseif(WINDOWS)
       set(HAVE_RENDER_D3D TRUE)
     endif()
     set(HAVE_SDL_VIDEO TRUE)
+    # Urho3D - bug fix - we are going to need this later when we refactor the library dependency handling
+    list (APPEND EXTRA_LIBS ${DIRECT3D_LIBRARIES})    # Empty when none of the D3D components is used
   endif()
 
   if(SDL_THREADS)
@@ -1374,193 +1355,8 @@ elseif(WINDOWS)
     endif()
   endif()
 
-  file(GLOB VERSION_SOURCES ${SDL2_SOURCE_DIR}/src/main/windows/*.rc)
-  file(GLOB SDLMAIN_SOURCES ${SDL2_SOURCE_DIR}/src/main/windows/*.c)
-  if(MINGW OR CYGWIN)
-    list(APPEND EXTRA_LIBS mingw32)
-    list(APPEND EXTRA_LDFLAGS "-mwindows")
-    set(SDL_CFLAGS "${SDL_CFLAGS} -Dmain=SDL_main")
-    list(APPEND SDL_LIBS "-lmingw32" "-lSDL2main" "-mwindows")
-  endif()
-elseif(APPLE)
-  # TODO: rework this all for proper MacOS X, iOS and Darwin support
-
-  # We always need these libs on macOS at the moment.
-  # !!! FIXME: we need Carbon for some very old API calls in
-  # !!! FIXME:  src/video/cocoa/SDL_cocoakeyboard.c, but we should figure out
-  # !!! FIXME:  how to dump those.
-  if(NOT IOS)
-    set(SDL_FRAMEWORK_COCOA 1)
-    set(SDL_FRAMEWORK_CARBON 1)
-  endif()
-
-  # Requires the darwin file implementation
-  if(SDL_FILE)
-    file(GLOB EXTRA_SOURCES ${SDL2_SOURCE_DIR}/src/file/cocoa/*.m)
-    set(SOURCE_FILES ${EXTRA_SOURCES} ${SOURCE_FILES})
-    # !!! FIXME: modern CMake doesn't need "LANGUAGE C" for Objective-C.
-    set_source_files_properties(${EXTRA_SOURCES} PROPERTIES LANGUAGE C)
-    set(HAVE_SDL_FILE TRUE)
-    # !!! FIXME: why is COREVIDEO inside this if() block?
-    set(SDL_FRAMEWORK_COREVIDEO 1)
-  else()
-    message_error("SDL_FILE must be enabled to build on MacOS X")
-  endif()
-
-  if(SDL_AUDIO)
-    set(SDL_AUDIO_DRIVER_COREAUDIO 1)
-    file(GLOB AUDIO_SOURCES ${SDL2_SOURCE_DIR}/src/audio/coreaudio/*.m)
-    # !!! FIXME: modern CMake doesn't need "LANGUAGE C" for Objective-C.
-    set_source_files_properties(${AUDIO_SOURCES} PROPERTIES LANGUAGE C)
-    set(SOURCE_FILES ${SOURCE_FILES} ${AUDIO_SOURCES})
-    set(HAVE_SDL_AUDIO TRUE)
-    set(SDL_FRAMEWORK_COREAUDIO 1)
-    set(SDL_FRAMEWORK_AUDIOTOOLBOX 1)
-  endif()
-
-  if(SDL_JOYSTICK)
-    set(SDL_JOYSTICK_IOKIT 1)
-    if (IOS)
-      file(GLOB JOYSTICK_SOURCES ${SDL2_SOURCE_DIR}/src/joystick/iphoneos/*.m ${SDL2_SOURCE_DIR}/src/joystick/steam/*.c)
-    else()
-      file(GLOB JOYSTICK_SOURCES ${SDL2_SOURCE_DIR}/src/joystick/darwin/*.c)
-    endif()
-    set(SOURCE_FILES ${SOURCE_FILES} ${JOYSTICK_SOURCES})
-    set(HAVE_SDL_JOYSTICK TRUE)
-    set(SDL_FRAMEWORK_IOKIT 1)
-    set(SDL_FRAMEWORK_FF 1)
-  endif()
-
-  if(SDL_HAPTIC)
-    set(SDL_HAPTIC_IOKIT 1)
-    if (IOS)
-      file(GLOB HAPTIC_SOURCES ${SDL2_SOURCE_DIR}/src/haptic/dummy/*.c)
-      set(SDL_HAPTIC_DUMMY 1)
-    else()
-      file(GLOB HAPTIC_SOURCES ${SDL2_SOURCE_DIR}/src/haptic/darwin/*.c)
-    endif()
-    set(SOURCE_FILES ${SOURCE_FILES} ${HAPTIC_SOURCES})
-    set(HAVE_SDL_HAPTIC TRUE)
-    set(SDL_FRAMEWORK_IOKIT 1)
-    set(SDL_FRAMEWORK_FF 1)
-    if(NOT SDL_JOYSTICK)
-      message(FATAL_ERROR "SDL_HAPTIC requires SDL_JOYSTICK to be enabled")
-    endif()
-  endif()
-
-  if(SDL_POWER)
-    set(SDL_POWER_MACOSX 1)
-    if (IOS)
-      file(GLOB POWER_SOURCES ${SDL2_SOURCE_DIR}/src/power/uikit/*.m)
-    else()
-      file(GLOB POWER_SOURCES ${SDL2_SOURCE_DIR}/src/power/macosx/*.c)
-    endif()
-    set(SOURCE_FILES ${SOURCE_FILES} ${POWER_SOURCES})
-    set(HAVE_SDL_POWER TRUE)
-    set(SDL_FRAMEWORK_IOKIT 1)
-  endif()
-
-  if(SDL_TIMERS)
-    set(SDL_TIMER_UNIX 1)
-    file(GLOB TIMER_SOURCES ${SDL2_SOURCE_DIR}/src/timer/unix/*.c)
-    set(SOURCE_FILES ${SOURCE_FILES} ${TIMER_SOURCES})
-    set(HAVE_SDL_TIMERS TRUE)
-  endif(SDL_TIMERS)
-
-  if(SDL_FILESYSTEM)
-    set(SDL_FILESYSTEM_COCOA 1)
-    file(GLOB FILESYSTEM_SOURCES ${SDL2_SOURCE_DIR}/src/filesystem/cocoa/*.m)
-    # !!! FIXME: modern CMake doesn't need "LANGUAGE C" for Objective-C.
-    set_source_files_properties(${FILESYSTEM_SOURCES} PROPERTIES LANGUAGE C)
-    set(SOURCE_FILES ${SOURCE_FILES} ${FILESYSTEM_SOURCES})
-    set(HAVE_SDL_FILESYSTEM TRUE)
-  endif()
-
-  # Actually load the frameworks at the end so we don't duplicate include.
-  if(SDL_FRAMEWORK_COREVIDEO)
-    find_library(COREVIDEO CoreVideo)
-    list(APPEND EXTRA_LIBS ${COREVIDEO})
-  endif()
-  if(SDL_FRAMEWORK_COCOA)
-    find_library(COCOA_LIBRARY Cocoa)
-    list(APPEND EXTRA_LIBS ${COCOA_LIBRARY})
-  endif()
-  if(SDL_FRAMEWORK_IOKIT)
-    find_library(IOKIT IOKit)
-    list(APPEND EXTRA_LIBS ${IOKIT})
-  endif()
-  if(SDL_FRAMEWORK_FF)
-    find_library(FORCEFEEDBACK ForceFeedback)
-    list(APPEND EXTRA_LIBS ${FORCEFEEDBACK})
-  endif()
-  if(SDL_FRAMEWORK_CARBON)
-    find_library(CARBON_LIBRARY Carbon)
-    list(APPEND EXTRA_LIBS ${CARBON_LIBRARY})
-  endif()
-  if(SDL_FRAMEWORK_COREAUDIO)
-    find_library(COREAUDIO CoreAudio)
-    list(APPEND EXTRA_LIBS ${COREAUDIO})
-  endif()
-  if(SDL_FRAMEWORK_AUDIOTOOLBOX)
-    find_library(AUDIOTOOLBOX AudioToolbox)
-    list(APPEND EXTRA_LIBS ${AUDIOTOOLBOX})
-  endif()
-
-  # iOS hack needed - http://code.google.com/p/ios-cmake/ ?
-  if(SDL_VIDEO)
-    if (IOS)
-      set(SDL_VIDEO_DRIVER_UIKIT 1)
-      file(GLOB UIKITVIDEO_SOURCES ${SDL2_SOURCE_DIR}/src/video/uikit/*.m)
-      set(SOURCE_FILES ${SOURCE_FILES} ${UIKITVIDEO_SOURCES})
-    else()
-      CheckCOCOA()
-      if(VIDEO_OPENGL)
-        set(SDL_VIDEO_OPENGL 1)
-        set(SDL_VIDEO_OPENGL_CGL 1)
-        set(SDL_VIDEO_RENDER_OGL 1)
-        set(HAVE_VIDEO_OPENGL TRUE)
-      endif()
-
-      if(VIDEO_OPENGLES)
-        set(SDL_VIDEO_OPENGL_EGL 1)
-        set(SDL_VIDEO_OPENGL_ES2 1)
-        set(SDL_VIDEO_RENDER_OGL_ES2 1)
-        set(HAVE_VIDEO_OPENGLES TRUE)
-      endif()
-    endif()
-  endif()
-
-  CheckPTHREAD()
-elseif(HAIKU)
-  if(SDL_VIDEO)
-    set(SDL_VIDEO_DRIVER_HAIKU 1)
-    file(GLOB HAIKUVIDEO_SOURCES ${SDL2_SOURCE_DIR}/src/video/haiku/*.c)
-    set(SOURCE_FILES ${SOURCE_FILES} ${HAIKUVIDEO_SOURCES})
-    set(HAVE_SDL_VIDEO TRUE)
-
-    set(SDL_FILESYSTEM_HAIKU 1)
-    file(GLOB FILESYSTEM_SOURCES ${SDL2_SOURCE_DIR}/src/filesystem/haiku/*.cc)
-    set(SOURCE_FILES ${SOURCE_FILES} ${FILESYSTEM_SOURCES})
-    set(HAVE_SDL_FILESYSTEM TRUE)
-
-    if(SDL_TIMERS)
-      set(SDL_TIMER_HAIKU 1)
-      file(GLOB TIMER_SOURCES ${SDL2_SOURCE_DIR}/src/timer/haiku/*.c)
-      set(SOURCE_FILES ${SOURCE_FILES} ${TIMER_SOURCES})
-      set(HAVE_SDL_TIMERS TRUE)
-    endif(SDL_TIMERS)
-
-    if(VIDEO_OPENGL)
-      # TODO: Use FIND_PACKAGE(OpenGL) instead
-      set(SDL_VIDEO_OPENGL 1)
-      set(SDL_VIDEO_OPENGL_BGL 1)
-      set(SDL_VIDEO_RENDER_OGL 1)
-      list(APPEND EXTRA_LIBS GL)
-      set(HAVE_VIDEO_OPENGL TRUE)
-    endif()
-  endif()
-
-  CheckPTHREAD()
+  # Urho3D - commented out adding main entry point for Windows platform
+  # Urho3D - commented out '-mwindows' linker flags setup as it appears to be automatically added by CMake; also commented out 'mingw32' library dependency as it does not appear to be needed, at least that the case for MinGW
 endif()
 
 if(VIDEO_VULKAN)
@@ -1579,7 +1375,6 @@ endif()
 if(NOT HAVE_SDL_JOYSTICK)
   set(SDL_JOYSTICK_DUMMY 1)
   if(SDL_JOYSTICK AND NOT APPLE) # results in unresolved symbols on OSX
-
     file(GLOB JOYSTICK_SOURCES ${SDL2_SOURCE_DIR}/src/joystick/dummy/*.c)
     set(SOURCE_FILES ${SOURCE_FILES} ${JOYSTICK_SOURCES})
   endif()
@@ -1617,9 +1412,7 @@ if(NOT HAVE_SDL_TIMERS)
   set(SOURCE_FILES ${SOURCE_FILES} ${TIMER_SOURCES})
 endif()
 
-if(NOT SDLMAIN_SOURCES)
-  file(GLOB SDLMAIN_SOURCES ${SDL2_SOURCE_DIR}/src/main/dummy/*.c)
-endif()
+# Urho3D - commented out inclusion of dummy main
 
 # Append the -MMD -MT flags
 # if(DEPENDENCY_TRACKING)
@@ -1628,8 +1421,9 @@ endif()
 #   endif()
 # endif()
 
+# Urho3D - use 'generated' path suffix for generated config header file (need the suffix as we support both out-of-source in-source build tree)
 configure_file("${SDL2_SOURCE_DIR}/include/SDL_config.h.cmake"
-  "${SDL2_BINARY_DIR}/include/SDL_config.h")
+  "${SDL2_BINARY_DIR}/include/generated/SDL_config.h")
 
 # Prepare the flags and remove duplicates
 if(EXTRA_LDFLAGS)
@@ -1646,8 +1440,7 @@ set(EXTRA_CFLAGS ${_EXTRA_CFLAGS})
 
 # Compat helpers for the configuration files
 if(NOT WINDOWS OR CYGWIN)
-  # TODO: we need a Windows script, too
-  execute_process(COMMAND sh ${SDL2_SOURCE_DIR}/build-scripts/updaterev.sh)
+  # Urho3D - commeted out the call to updaterev.sh script as it won't work on any platform as it assumes hg to be the version source control which is not true in our case
 
   set(prefix ${CMAKE_INSTALL_PREFIX})
   set(exec_prefix "\${prefix}")
@@ -1678,19 +1471,18 @@ if(NOT WINDOWS OR CYGWIN)
   listtostr(SDL_LIBS _SDL_LIBS)
   set(SDL_LIBS ${_SDL_LIBS})
 
-  # MESSAGE(STATUS "SDL_LIBS: ${SDL_LIBS}")
-  # MESSAGE(STATUS "SDL_STATIC_LIBS: ${SDL_STATIC_LIBS}")
-
-  configure_file("${SDL2_SOURCE_DIR}/sdl2.pc.in"
-    "${SDL2_BINARY_DIR}/sdl2.pc" @ONLY)
-  configure_file("${SDL2_SOURCE_DIR}/sdl2-config.in"
-    "${SDL2_BINARY_DIR}/sdl2-config")
-  configure_file("${SDL2_SOURCE_DIR}/sdl2-config.in"
-    "${SDL2_BINARY_DIR}/sdl2-config" @ONLY)
-  configure_file("${SDL2_SOURCE_DIR}/SDL2.spec.in"
-    "${SDL2_BINARY_DIR}/SDL2.spec" @ONLY)
+  # Urho3D - commented out pkg-config configuration file generation
+  # Urho3D - TODO - utilize the populated variables for pkg-config configuration file generation for Urho3D.pc
 endif()
 
+# Urho3D - restore the original CMake global settings
+set (CMAKE_REQUIRED_FLAGS ${ORIG_CMAKE_REQUIRED_FLAGS})
+set (CMAKE_REQUIRED_INCLUDES ${ORIG_CMAKE_REQUIRED_INCLUDES})
+set (CMAKE_REQUIRED_LIBRARIES ${ORIG_CMAKE_REQUIRED_LIBRARIES})
+
+# Urho3D - only echo the status once during initial configuration
+if (NOT SDL_INFO_ECHOED_STATUS)
+  set (SDL_INFO_ECHOED_STATUS TRUE CACHE INTERNAL "SDL info echoed status")
 ##### Info output #####
 message(STATUS "")
 message(STATUS "SDL2 was configured with the following options:")
@@ -1702,7 +1494,11 @@ message(STATUS "")
 message(STATUS "Subsystems:")
 foreach(_SUB ${SDL_SUBSYSTEMS})
   string(TOUPPER ${_SUB} _OPT)
-  message_bool_option(${_SUB} SDL_${_OPT})
+  # Urho3D - use the same amount of spaces for padding
+  string(LENGTH ${_SUB} _SUBLEN)
+  math(EXPR _PADLEN "11 - ${_SUBLEN}")
+  string(RANDOM LENGTH ${_PADLEN} ALPHABET " " _PADDING)
+  message_bool_option(${_SUB} SDL_${_OPT} ${_PADDING})
 endforeach()
 message(STATUS "")
 message(STATUS "Options:")
@@ -1721,178 +1517,28 @@ message(STATUS " EXTRA_CFLAGS:  ${EXTRA_CFLAGS}")
 message(STATUS " EXTRA_LDFLAGS: ${EXTRA_LDFLAGS}")
 message(STATUS " EXTRA_LIBS:    ${EXTRA_LIBS}")
 message(STATUS "")
-message(STATUS " Build Shared Library: ${SDL_SHARED}")
-message(STATUS " Build Static Library: ${SDL_STATIC}")
-if(SDL_STATIC)
-    message(STATUS " Build Static Library with Position Independent Code: ${SDL_STATIC_PIC}")
-endif()
-message(STATUS "")
-if(UNIX)
-  message(STATUS "If something was not detected, although the libraries")
-  message(STATUS "were installed, then make sure you have set the")
-  message(STATUS "CFLAGS and LDFLAGS environment variables correctly.")
-  message(STATUS "")
-endif()
+# Urho3D - commented out messages informing user to set the CFLAGS and LDFLAGS environment variables to workaround detection problems, our modified version does not support that
+endif (NOT SDL_INFO_ECHOED_STATUS)
 
 # Ensure that the extra cflags are used at compile time
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${EXTRA_CFLAGS}")
 
-# Always build SDLmain
-add_library(SDL2main STATIC ${SDLMAIN_SOURCES})
-target_include_directories(SDL2main PUBLIC "$<BUILD_INTERFACE:${SDL2_SOURCE_DIR}/include>" $<INSTALL_INTERFACE:include/SDL2>)
-set(_INSTALL_LIBS "SDL2main")
-if (NOT ANDROID)
-  set_target_properties(SDL2main PROPERTIES DEBUG_POSTFIX ${SDL_CMAKE_DEBUG_POSTFIX})
-endif()
+# Urho3D - commented out targets defined by original CMakeLists.txt, instead we setup our own target that meets our own needs
 
-if(SDL_SHARED)
-  add_library(SDL2 SHARED ${SOURCE_FILES} ${VERSION_SOURCES})
-  if(APPLE)
-    set_target_properties(SDL2 PROPERTIES
-      MACOSX_RPATH 1
-      OUTPUT_NAME "SDL2-${LT_RELEASE}")
-  elseif(UNIX AND NOT ANDROID)
-    set_target_properties(SDL2 PROPERTIES
-      VERSION ${LT_VERSION}
-      SOVERSION ${LT_REVISION}
-      OUTPUT_NAME "SDL2-${LT_RELEASE}")
-  else()
-    set_target_properties(SDL2 PROPERTIES
-      VERSION ${SDL_VERSION}
-      SOVERSION ${LT_REVISION}
-      OUTPUT_NAME "SDL2")
-  endif()
-  if(MSVC AND NOT LIBC)
-    # Don't try to link with the default set of libraries.
-    set_target_properties(SDL2 PROPERTIES LINK_FLAGS_RELEASE "/NODEFAULTLIB")
-    set_target_properties(SDL2 PROPERTIES LINK_FLAGS_DEBUG "/NODEFAULTLIB")
-    set_target_properties(SDL2 PROPERTIES STATIC_LIBRARY_FLAGS "/NODEFAULTLIB")
-  endif()
-  set(_INSTALL_LIBS "SDL2" ${_INSTALL_LIBS})
-  target_link_libraries(SDL2 ${EXTRA_LIBS} ${EXTRA_LDFLAGS})
-  target_include_directories(SDL2 PUBLIC "$<BUILD_INTERFACE:${SDL2_SOURCE_DIR}/include>" $<INSTALL_INTERFACE:include/SDL2>)
-  if (NOT ANDROID)
-    set_target_properties(SDL2 PROPERTIES DEBUG_POSTFIX ${SDL_CMAKE_DEBUG_POSTFIX})
-  endif()
-endif()
+# Urho3D - anything below this line is Urho3D specific
 
-if(SDL_STATIC)
-  set (BUILD_SHARED_LIBS FALSE)
-  add_library(SDL2-static STATIC ${SOURCE_FILES})
-  if (NOT SDL_SHARED OR NOT WIN32)
-    set_target_properties(SDL2-static PROPERTIES OUTPUT_NAME "SDL2")
-    # Note: Apparently, OUTPUT_NAME must really be unique; even when
-    # CMAKE_IMPORT_LIBRARY_SUFFIX or the like are given. Otherwise
-    # the static build may race with the import lib and one will get
-    # clobbered, when the suffix is realized via subsequent rename.
-  endif()
-  set_target_properties(SDL2-static PROPERTIES POSITION_INDEPENDENT_CODE ${SDL_STATIC_PIC})
-  if(MSVC AND NOT LIBC)
-    set_target_properties(SDL2-static PROPERTIES LINK_FLAGS_RELEASE "/NODEFAULTLIB")
-    set_target_properties(SDL2-static PROPERTIES LINK_FLAGS_DEBUG "/NODEFAULTLIB")
-    set_target_properties(SDL2-static PROPERTIES STATIC_LIBRARY_FLAGS "/NODEFAULTLIB")
-  endif()
-  # TODO: Win32 platforms keep the same suffix .lib for import and static
-  # libraries - do we need to consider this?
-  set(_INSTALL_LIBS "SDL2-static" ${_INSTALL_LIBS})
-  target_link_libraries(SDL2-static ${EXTRA_LIBS} ${EXTRA_LDFLAGS})
-  target_include_directories(SDL2-static PUBLIC "$<BUILD_INTERFACE:${SDL2_SOURCE_DIR}/include>" $<INSTALL_INTERFACE:include/SDL2>)
-  if (NOT ANDROID)
-    set_target_properties(SDL2-static PROPERTIES DEBUG_POSTFIX ${SDL_CMAKE_DEBUG_POSTFIX})
-  endif()
-endif()
+# Define target name
+set (TARGET_NAME SDL)
 
-##### Tests #####
+# Setup target as STATIC library (as the result we never use EXTRA_LDFLAGS linker flags)
+setup_library ()
 
-if(SDL_TEST)
-  file(GLOB TEST_SOURCES ${SDL2_SOURCE_DIR}/src/test/*.c)
-  add_library(SDL2_test STATIC ${TEST_SOURCES})
-
-  add_subdirectory(test)
-endif()
-
-##### Installation targets #####
-install(TARGETS ${_INSTALL_LIBS} EXPORT SDL2Targets
-  LIBRARY DESTINATION "lib${LIB_SUFFIX}"
-  ARCHIVE DESTINATION "lib${LIB_SUFFIX}"
-  RUNTIME DESTINATION bin)
-
-##### Export files #####
-if (APPLE)
-  set(PKG_PREFIX "SDL2.framework/Resources")
-elseif (WINDOWS)
-  set(PKG_PREFIX "cmake")
-else ()
-  set(PKG_PREFIX "lib/cmake/SDL2")
+# Install headers for building and using the Urho3D library (install dependency for InputEvents.h)
+install_header_files (DIRECTORY include/ DESTINATION ${DEST_INCLUDE_DIR}/ThirdParty/SDL FILES_MATCHING PATTERN *.h USE_FILE_SYMLINK)    # Note: the trailing slash is significant
+install_header_files (FILES ${SDL2_BINARY_DIR}/include/generated/SDL_config.h DESTINATION ${DEST_INCLUDE_DIR}/ThirdParty/SDL)
+# Install dependency for SDL_android_main.c
+if (ANDROID)
+  install_header_files (DIRECTORY src/main/android DESTINATION ${DEST_INCLUDE_DIR}/ThirdParty/SDL)
+  install_header_files (FILES src/SDL_internal.h DESTINATION ${DEST_INCLUDE_DIR}/ThirdParty/SDL)
+  install_header_files (DIRECTORY src/dynapi DESTINATION ${DEST_INCLUDE_DIR}/ThirdParty/SDL FILES_MATCHING PATTERN *.h)
 endif ()
-
-include(CMakePackageConfigHelpers)
-write_basic_package_version_file("${CMAKE_BINARY_DIR}/SDL2ConfigVersion.cmake"
-  VERSION ${SDL_VERSION}
-  COMPATIBILITY AnyNewerVersion
-)
-
-install(EXPORT SDL2Targets
-  FILE SDL2Targets.cmake
-  NAMESPACE SDL2::
-  DESTINATION ${PKG_PREFIX}
-)
-install(
-  FILES
-    ${CMAKE_CURRENT_SOURCE_DIR}/SDL2Config.cmake
-    ${CMAKE_BINARY_DIR}/SDL2ConfigVersion.cmake
-  DESTINATION ${PKG_PREFIX}
-  COMPONENT Devel
-)
-
-file(GLOB INCLUDE_FILES ${SDL2_SOURCE_DIR}/include/*.h)
-file(GLOB BIN_INCLUDE_FILES ${SDL2_BINARY_DIR}/include/*.h)
-foreach(_FNAME ${BIN_INCLUDE_FILES})
-  get_filename_component(_INCNAME ${_FNAME} NAME)
-  list(REMOVE_ITEM INCLUDE_FILES ${SDL2_SOURCE_DIR}/include/${_INCNAME})
-endforeach()
-list(APPEND INCLUDE_FILES ${BIN_INCLUDE_FILES})
-install(FILES ${INCLUDE_FILES} DESTINATION include/SDL2)
-
-string(TOUPPER "${CMAKE_BUILD_TYPE}" UPPER_BUILD_TYPE)
-if (UPPER_BUILD_TYPE MATCHES DEBUG)
-  set(SOPOSTFIX "${SDL_CMAKE_DEBUG_POSTFIX}")
-else()
-  set(SOPOSTFIX "")
-endif()
-
-if(NOT (WINDOWS OR CYGWIN))
-  if(SDL_SHARED)
-    set(SOEXT ${CMAKE_SHARED_LIBRARY_SUFFIX}) # ".so", ".dylib", etc.
-    get_target_property(SONAME SDL2 OUTPUT_NAME)
-    if(NOT ANDROID)
-        install(CODE "
-          execute_process(COMMAND ${CMAKE_COMMAND} -E create_symlink
-            \"lib${SONAME}${SOPOSTFIX}${SOEXT}\" \"libSDL2${SOPOSTFIX}${SOEXT}\")"
-            WORKING_DIR "${SDL2_BINARY_DIR}")
-        install(FILES ${SDL2_BINARY_DIR}/libSDL2${SOPOSTFIX}${SOEXT} DESTINATION "lib${LIB_SUFFIX}")
-    endif()
-  endif()
-  if(FREEBSD)
-    # FreeBSD uses ${PREFIX}/libdata/pkgconfig
-    install(FILES ${SDL2_BINARY_DIR}/sdl2.pc DESTINATION "libdata/pkgconfig")
-  else()
-    install(FILES ${SDL2_BINARY_DIR}/sdl2.pc
-      DESTINATION "lib${LIB_SUFFIX}/pkgconfig")
-  endif()
-  install(PROGRAMS ${SDL2_BINARY_DIR}/sdl2-config DESTINATION bin)
-  # TODO: what about the .spec file? Is it only needed for RPM creation?
-  install(FILES "${SDL2_SOURCE_DIR}/sdl2.m4" DESTINATION "${CMAKE_INSTALL_FULL_DATAROOTDIR}/aclocal")
-endif()
-
-##### Uninstall target #####
-
-if(NOT TARGET uninstall)
-  configure_file(
-      "${CMAKE_CURRENT_SOURCE_DIR}/cmake_uninstall.cmake.in"
-      "${CMAKE_CURRENT_BINARY_DIR}/cmake_uninstall.cmake"
-      IMMEDIATE @ONLY)
-
-  add_custom_target(uninstall
-      COMMAND ${CMAKE_COMMAND} -P ${CMAKE_CURRENT_BINARY_DIR}/cmake_uninstall.cmake)
-endif()
