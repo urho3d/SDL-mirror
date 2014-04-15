@@ -19,6 +19,8 @@
   3. This notice may not be removed or altered from any source distribution.
 */
 
+// Modified by Lasse Oorni for Urho3D
+
 #include "../SDL_internal.h"
 
 /* General gesture handling code for SDL */
@@ -166,7 +168,8 @@ int SDL_SaveDollarTemplate(SDL_GestureID gestureId, SDL_RWops *dst)
     for (i = 0; i < SDL_numGestureTouches; i++) {
         SDL_GestureTouch* touch = &SDL_gestureTouch[i];
         for (j = 0; j < touch->numDollarTemplates; j++) {
-            if (touch->dollarTemplate[j].hash == gestureId) {
+            // Urho3D: gesture IDs are stored as 32bit, so check the low bits only. Fix index variable (i -> j)
+            if ((touch->dollarTemplate[j].hash & 0xffffffff) == (gestureId & 0xffffffff)) {
                 return SaveTemplate(&touch->dollarTemplate[j], dst);
             }
         }
