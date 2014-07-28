@@ -46,7 +46,7 @@ static int forward_argc;
 static char **forward_argv;
 static int exit_status;
 
-// Urho3D: added variable
+// Urho3D: added variables
 const char* resource_dir = 0;
 const char* documents_dir = 0;
 #if defined(SDL_MAIN_NEEDED) && !defined(IOS_DYLIB)
@@ -104,6 +104,22 @@ const char* SDL_IOS_GetResourceDir()
     }
     
     return resource_dir;
+}
+
+// Urho3D: added function
+const char* SDL_IOS_GetDocumentsDir()
+{
+    if (!documents_dir)
+    {
+        NSArray *paths = NSSearchPathForDirectoriesInDomains(NSDocumentDirectory, NSUserDomainMask, YES);
+        NSString *basePath = ([paths count] > 0) ? [paths objectAtIndex:0] : nil;
+        
+        const char *temp = [basePath UTF8String];
+        documents_dir = malloc(strlen(temp) + 1);
+        strcpy(documents_dir, temp);
+    }
+    
+    return documents_dir;
 }
 
 static void SDLCALL
