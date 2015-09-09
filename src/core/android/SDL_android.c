@@ -2481,7 +2481,7 @@ char** SDL_Android_GetFileList(const char* path, int* count)
     /* stringArray = assetManager.list(path) */
     mid = (*mEnv)->GetMethodID(mEnv, (*mEnv)->GetObjectClass(mEnv, assetManager), "list", "(Ljava/lang/String;)[Ljava/lang/String;");
     jobjectArray stringArray = (*mEnv)->CallObjectMethod(mEnv, assetManager, mid, pathJString);
-    if (Android_JNI_ExceptionOccurred(true))
+    if (Android_JNI_ExceptionOccurred(SDL_TRUE))
     {
         LocalReferenceHolder_Cleanup(&refs);
         return NULL;
@@ -2498,8 +2498,7 @@ char** SDL_Android_GetFileList(const char* path, int* count)
         (*mEnv)->ReleaseStringUTFChars(mEnv, string, cString);
     }
 
-    if (count != NULL)
-        *count = arrayLength;
+    *count = arrayLength;
 
     LocalReferenceHolder_Cleanup(&refs);
     return cStringArray;
