@@ -851,7 +851,7 @@ elseif(APPLE)
 
   if(SDL_JOYSTICK)
     # Urho3D - bug fix - make it work for iOS platform
-    if (IOS)
+    if (IOS OR TVOS)
       set (SDL_JOYSTICK_MFI 1)
       file (GLOB JOYSTICK_SOURCES ${SDL2_SOURCE_DIR}/src/joystick/iphoneos/*.m ${SDL2_SOURCE_DIR}/src/joystick/steam/*.c)
     else ()
@@ -867,7 +867,7 @@ elseif(APPLE)
 
   if(SDL_HAPTIC)
     # Urho3d - bug fix - make it work for iOS platform
-    if (IOS)
+    if (IOS OR TVOS)
       set (SDL_HAPTIC_DUMMY 1)
       file (GLOB HAPTIC_SOURCES ${SDL2_SOURCE_DIR}/src/haptic/dummy/*.c)
     else ()
@@ -885,7 +885,7 @@ elseif(APPLE)
 
   if(SDL_POWER)
     # Urho3d - bug fix - make it work for iOS platform
-    if (IOS)
+    if (IOS OR TVOS)
       set (SDL_POWER_UIKIT 1)
       file (GLOB POWER_SOURCES ${SDL2_SOURCE_DIR}/src/power/uikit/*.m)
     else ()
@@ -1541,6 +1541,10 @@ set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${EXTRA_CFLAGS}")
 
 # Define target name
 set (TARGET_NAME SDL)
+
+# Define source files
+file (GLOB H_FILES include/*.h)     # Adding the headers into source files list is just for easier file browsing in the IDE
+list (APPEND SOURCE_FILES ${H_FILES})
 
 # Setup target as STATIC library (as the result we never use EXTRA_LDFLAGS linker flags)
 setup_library ()
