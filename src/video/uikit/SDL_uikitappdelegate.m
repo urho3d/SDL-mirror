@@ -19,7 +19,7 @@
   3. This notice may not be removed or altered from any source distribution.
 */
 
-// Modified by Lasse Oorni for Urho3D
+// Modified by Lasse Oorni and Yao Wei Tjong for Urho3D
 
 #include "../../SDL_internal.h"
 
@@ -78,7 +78,7 @@ int main(int argc, char **argv)
 
 // Urho3D: added function
 void SDL_IOS_LogMessage(const char *message)
-{   
+{
     #ifdef _DEBUG
     NSLog(@"%@", [NSString stringWithUTF8String: message]);
     #endif
@@ -93,7 +93,7 @@ const char* SDL_IOS_GetResourceDir()
         resource_dir = malloc(strlen(temp) + 1);
         strcpy(resource_dir, temp);
     }
-    
+
     return resource_dir;
 }
 
@@ -104,14 +104,22 @@ const char* SDL_IOS_GetDocumentsDir()
     {
         NSArray *paths = NSSearchPathForDirectoriesInDomains(NSDocumentDirectory, NSUserDomainMask, YES);
         NSString *basePath = ([paths count] > 0) ? [paths objectAtIndex:0] : nil;
-        
+
         const char *temp = [basePath UTF8String];
         documents_dir = malloc(strlen(temp) + 1);
         strcpy(documents_dir, temp);
     }
-    
+
     return documents_dir;
 }
+
+// Urho3D: added function
+#if TARGET_OS_TV
+unsigned SDL_TVOS_GetActiveProcessorCount()
+{
+    return [NSProcessInfo class] ? (unsigned)[[NSProcessInfo processInfo] activeProcessorCount] : 1;
+}
+#endif
 
 static void SDLCALL
 SDL_IdleTimerDisabledChanged(void *userdata, const char *name, const char *oldValue, const char *hint)
