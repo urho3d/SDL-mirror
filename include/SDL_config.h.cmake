@@ -414,6 +414,12 @@
 #cmakedefine SDL_ASSEMBLY_ROUTINES @SDL_ASSEMBLY_ROUTINES@
 #cmakedefine SDL_ALTIVEC_BLITTERS @SDL_ALTIVEC_BLITTERS@
 
+/* Enable ime support */
+#cmakedefine SDL_USE_IME @SDL_USE_IME@
+
+/* Enable dynamic udev support */
+#cmakedefine SDL_UDEV_DYNAMIC @SDL_UDEV_DYNAMIC@
+
 /* Enable dynamic libsamplerate support */
 #cmakedefine SDL_LIBSAMPLERATE_DYNAMIC @SDL_LIBSAMPLERATE_DYNAMIC@
 
