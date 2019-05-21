@@ -17,7 +17,31 @@
   2. Altered source versions must be plainly marked as such, and must not be
      misrepresented as being the original software.
   3. This notice may not be removed or altered from any source distribution.
+
+  Modified by Bantukul Olarn for Urho3D, the modified portion is licensed under below license
+ 
+  Copyright (c) 2008-2019 the Urho3D project.
+
+  Permission is hereby granted, free of charge, to any person obtaining a copy
+  of this software and associated documentation files (the "Software"), to deal
+  in the Software without restriction, including without limitation the rights
+  to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+  copies of the Software, and to permit persons to whom the Software is
+  furnished to do so, subject to the following conditions:
+
+  The above copyright notice and this permission notice shall be included in
+  all copies or substantial portions of the Software.
+
+  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+  IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+  FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+  AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+  LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+  THE SOFTWARE.
+
 */
+
 #include "../SDL_internal.h"
 
 #include "SDL_video.h"
@@ -26,7 +50,9 @@
 #include "SDL_RLEaccel_c.h"
 #include "SDL_pixels_c.h"
 #include "SDL_yuv_c.h"
+#ifndef __EMSCRIPTEN__ // Urho3D - swap out SIMD call since emscripten doesn't have it. todo: remove when resolved
 #include "../cpuinfo/SDL_simd.h"
+#endif
 
 
 /* Check to make sure we can safely check multiplication of surface w and pitch and it won't overflow size_t */
@@ -120,13 +146,19 @@ SDL_CreateRGBSurfaceWithFormat(Uint32 flags, int width, int height, int depth,
             return NULL;
         }
 
+#ifdef __EMSCRIPTEN__
+        surface->pixels = SDL_malloc((size_t)size);
+#else
         surface->pixels = SDL_SIMDAlloc((size_t)size);
+#endif
         if (!surface->pixels) {
             SDL_FreeSurface(surface);
             SDL_OutOfMemory();
             return NULL;
         }
+#ifndef __EMSCRIPTEN__
         surface->flags |= SDL_SIMD_ALIGNED;
+#endif
         /* This is important for bitmaps */
         SDL_memset(surface->pixels, 0, surface->h * surface->pitch);
     }
@@ -1264,7 +1296,11 @@ SDL_FreeSurface(SDL_Surface * surface)
         /* Don't free */
     } else if (surface->flags & SDL_SIMD_ALIGNED) {
         /* Free aligned */
+#ifdef __EMSCRIPTEN__
+        SDL_free(surface->pixels);
+#else
         SDL_SIMDFree(surface->pixels);
+#endif
     } else {
         /* Normal */
         SDL_free(surface->pixels);

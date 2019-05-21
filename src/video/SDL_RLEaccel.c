@@ -1,3 +1,4 @@
+// Urho3D - changed character encoding to utf-8 to preserve original license text.
 /*
   Simple DirectMedia Layer
   Copyright (C) 1997-2019 Sam Lantinga <slouken@libsdl.org>
@@ -25,7 +26,7 @@
  *
  * Original version by Sam Lantinga
  *
- * Mattias Engdegård (Yorick): Rewrite. New encoding format, encoder and
+ * Mattias EngdegÃ¥rd (Yorick): Rewrite. New encoding format, encoder and
  * decoder. Added per-surface alpha blitter. Added per-pixel alpha
  * format, encoder and blitter.
  *
@@ -83,13 +84,40 @@
  *
  *   The end of the sequence is marked by a zero <skip>,<run> pair at the
  *   beginning of an opaque line.
- */
+ *
+ */ 
+
+/*
+  Modified by Bantukul Olarn for Urho3D, the modified portion is licensed under below license
+ 
+  Copyright (c) 2008-2019 the Urho3D project.
+
+  Permission is hereby granted, free of charge, to any person obtaining a copy
+  of this software and associated documentation files (the "Software"), to deal
+  in the Software without restriction, including without limitation the rights
+  to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+  copies of the Software, and to permit persons to whom the Software is
+  furnished to do so, subject to the following conditions:
+
+  The above copyright notice and this permission notice shall be included in
+  all copies or substantial portions of the Software.
+
+  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+  IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+  FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+  AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+  LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+  THE SOFTWARE.
+*/
 
 #include "SDL_video.h"
 #include "SDL_sysvideo.h"
 #include "SDL_blit.h"
 #include "SDL_RLEaccel_c.h"
+#ifndef __EMSCRIPTEN__ // Urho3D - swap out SIMD call since emscripten doesn't have it. todo: remove when resolved
 #include "../cpuinfo/SDL_simd.h"
+#endif
 
 #ifndef MIN
 #define MIN(a, b) ((a) < (b) ? (a) : (b))
@@ -1221,9 +1249,15 @@ RLEAlphaSurface(SDL_Surface * surface)
 
     /* Now that we have it encoded, release the original pixels */
     if (!(surface->flags & SDL_PREALLOC)) {
+#ifdef __EMSCRIPTEN__
+        SDL_free(surface->pixels);
+#else
         SDL_SIMDFree(surface->pixels);
+#endif
         surface->pixels = NULL;
+#ifndef __EMSCRIPTEN__
         surface->flags &= ~SDL_SIMD_ALIGNED;
+#endif
     }
 
     /* realloc the buffer to release unused memory */
@@ -1385,9 +1419,15 @@ RLEColorkeySurface(SDL_Surface * surface)
 
     /* Now that we have it encoded, release the original pixels */
     if (!(surface->flags & SDL_PREALLOC)) {
+#ifdef __EMSCRIPTEN__
+        SDL_free(surface->pixels);
+#else
         SDL_SIMDFree(surface->pixels);
+#endif
         surface->pixels = NULL;
+#ifndef __EMSCRIPTEN__
         surface->flags &= ~SDL_SIMD_ALIGNED;
+#endif
     }
 
     /* realloc the buffer to release unused memory */
@@ -1487,11 +1527,17 @@ UnRLEAlpha(SDL_Surface * surface)
         uncopy_opaque = uncopy_transl = uncopy_32;
     }
 
+#ifdef __EMSCRIPTEN__
+    surface->pixels = SDL_malloc(surface->h * surface->pitch);
+#else
     surface->pixels = SDL_SIMDAlloc(surface->h * surface->pitch);
+#endif
     if (!surface->pixels) {
         return (SDL_FALSE);
     }
+#ifndef __EMSCRIPTEN__
     surface->flags |= SDL_SIMD_ALIGNED;
+#endif
     /* fill background with transparent pixels */
     SDL_memset(surface->pixels, 0, surface->h * surface->pitch);
 
@@ -1553,13 +1599,19 @@ SDL_UnRLESurface(SDL_Surface * surface, int recode)
                 SDL_Rect full;
 
                 /* re-create the original surface */
+#ifdef __EMSCRIPTEN__
+                surface->pixels = SDL_malloc(surface->h * surface->pitch);
+#else
                 surface->pixels = SDL_SIMDAlloc(surface->h * surface->pitch);
+#endif
                 if (!surface->pixels) {
                     /* Oh crap... */
                     surface->flags |= SDL_RLEACCEL;
                     return;
                 }
+#ifndef __EMSCRIPTEN__
                 surface->flags |= SDL_SIMD_ALIGNED;
+#endif
 
                 /* fill it with the background color */
                 SDL_FillRect(surface, NULL, surface->map->info.colorkey);

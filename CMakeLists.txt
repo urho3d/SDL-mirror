@@ -19,7 +19,8 @@
 # 3. This notice may not be removed or altered from any source distribution.
 #
 
-# Modified by Yao Wei Tjong for Urho3D, the modified portion is licensed under below license
+# Modified by Yao Wei Tjong, Bantukul Olarn for Urho3D.
+# the modified portion is licensed under below license
 
 #
 # Copyright (c) 2008-2019 the Urho3D project.
@@ -395,6 +396,9 @@ foreach (_SUB AUDIO CPUINFO EVENTS FILE HAPTIC JOYSTICK POWER RENDER SENSOR VIDE
 endforeach ()
 if (SDL_RENDER)
   list (APPEND SOURCE_FILE_PATTERNS ${SDL2_SOURCE_DIR}/src/render/*/*.c)   # Recurse one more level
+endif ()
+if (SDL_VIDEO) # Urho3D: Added video/yuv2rgb sources
+  list (APPEND SOURCE_FILE_PATTERNS ${SDL2_SOURCE_DIR}/src/video/yuv2rgb/*.c)
 endif ()
 file(GLOB SOURCE_FILES ${SOURCE_FILE_PATTERNS})
 
