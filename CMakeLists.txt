@@ -385,6 +385,7 @@ set (SOURCE_FILE_PATTERNS
   ${SDL2_SOURCE_DIR}/src/libm/*.c
   ${SDL2_SOURCE_DIR}/src/stdlib/*.c
   ${SDL2_SOURCE_DIR}/src/thread/*.c
+  ${SDL2_SOURCE_DIR}/src/timer/*.c)
 # Urho3D - exclude source files from disabled subsystems, except SDL_ATOMIC, SDL_THREADS and SDL_TIMERS as SDL always needs them even when they may be just generic or dummy implementations
 foreach (_SUB AUDIO CPUINFO EVENTS FILE HAPTIC JOYSTICK POWER RENDER VIDEO)
   string (TOLOWER ${_SUB} _DIR)
@@ -396,7 +397,6 @@ if (SDL_RENDER)
   list (APPEND SOURCE_FILE_PATTERNS ${SDL2_SOURCE_DIR}/src/render/*/*.c)   # Recurse one more level
 endif ()
 file(GLOB SOURCE_FILES ${SOURCE_FILE_PATTERNS})
-  ${SDL2_SOURCE_DIR}/src/timer/*.c)
 
 if(ASSERTIONS STREQUAL "auto")
   # Do nada - use optimization settings to determine the assertion level
