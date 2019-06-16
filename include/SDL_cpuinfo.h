@@ -210,6 +210,11 @@ extern DECLSPEC int SDLCALL SDL_GetSystemRAM(void);
  */
 extern DECLSPEC size_t SDLCALL SDL_SIMDGetAlignment(void);
 
+// Urho3D - bug fix - check if SIMD is supported
+#ifdef __EMSCRIPTEN__
+#define SDL_SIMDAlloc SDL_malloc
+#define SDL_SIMDFree SDL_free
+#else
 /**
  * \brief Allocate memory in a SIMD-friendly way.
  *
@@ -257,8 +262,8 @@ extern DECLSPEC void * SDLCALL SDL_SIMDAlloc(const size_t len);
  * \sa SDL_SIMDAlloc
  */
 extern DECLSPEC void SDLCALL SDL_SIMDFree(void *ptr);
+#endif
 
-/* vi: set ts=4 sw=4 expandtab: */
 /* Ends C function definitions when using C++ */
 #ifdef __cplusplus
 }
