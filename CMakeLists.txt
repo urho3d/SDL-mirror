@@ -239,7 +239,6 @@ if(EMSCRIPTEN)
   set(SDL_SHARED_ENABLED_BY_DEFAULT OFF)
   # Urho3D - leave all the other subsystems enable by default
   set(SDL_THREADS_ENABLED_BY_DEFAULT OFF)
-  set(SDL_CPUINFO_ENABLED_BY_DEFAULT OFF)
 endif()
 
 # Urho3D - we always build internal sub-libraries as STATIC library type, so this build option is not applicable to us

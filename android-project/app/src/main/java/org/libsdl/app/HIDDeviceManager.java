@@ -1,5 +1,8 @@
+// Modified by Yao Wei Tjong for Urho3D
+
 package org.libsdl.app;
 
+import android.annotation.TargetApi;
 import android.app.Activity;
 import android.app.AlertDialog;
 import android.app.PendingIntent;
@@ -7,6 +10,7 @@ import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
 import android.bluetooth.BluetoothManager;
 import android.bluetooth.BluetoothProfile;
+import android.os.Build;
 import android.util.Log;
 import android.content.BroadcastReceiver;
 import android.content.Context;
@@ -150,7 +154,11 @@ public class HIDDeviceManager {
         }
 
         initializeUSB();
-        initializeBluetooth();
+
+        // Urho3D - check first if Bluetooth is available
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN_MR2) {
+            initializeBluetooth();
+        }
     }
 
     public Context getContext() {
@@ -372,6 +380,8 @@ public class HIDDeviceManager {
         }
     }
 
+    // Urho3D - suppress lint error
+    @TargetApi(Build.VERSION_CODES.JELLY_BEAN_MR2)
     private void initializeBluetooth() {
         Log.d(TAG, "Initializing Bluetooth");
 
@@ -434,6 +444,8 @@ public class HIDDeviceManager {
     // Chromebooks do not pass along ACTION_ACL_CONNECTED / ACTION_ACL_DISCONNECTED properly.
     // This function provides a sort of dummy version of that, watching for changes in the
     // connected devices and attempting to add controllers as things change.
+    // Urho3D - suppress lint error
+    @TargetApi(Build.VERSION_CODES.LOLLIPOP)
     public void chromebookConnectionHandler() {
         if (!mIsChromebook) {
             return;
@@ -508,6 +520,8 @@ public class HIDDeviceManager {
         }
     }
 
+    // Urho3D - suppress lint error
+    @TargetApi(Build.VERSION_CODES.LOLLIPOP)
     public boolean isSteamController(BluetoothDevice bluetoothDevice) {
         // Sanity check.  If you pass in a null device, by definition it is never a Steam Controller.
         if (bluetoothDevice == null) {

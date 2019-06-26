@@ -1,3 +1,5 @@
+// Modified by Yao Wei Tjong for Urho3D
+
 package org.libsdl.app;
 
 import android.hardware.usb.*;
@@ -162,6 +164,8 @@ class HIDDeviceUSB implements HIDDevice {
             skipped_report_id = true;
         }
 
+      // Urho3D - check first if the new API is available
+      if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN_MR2) {
         res = mConnection.controlTransfer(
             UsbConstants.USB_TYPE_CLASS | 0x01 /*RECIPIENT_INTERFACE*/ | UsbConstants.USB_DIR_OUT,
             0x09/*HID set_report*/,
@@ -169,6 +173,7 @@ class HIDDeviceUSB implements HIDDevice {
             0,
             report, offset, length,
             1000/*timeout millis*/);
+      }
 
         if (res < 0) {
             Log.w(TAG, "sendFeatureReport() returned " + res + " on device " + getDeviceName());
@@ -206,6 +211,8 @@ class HIDDeviceUSB implements HIDDevice {
             skipped_report_id = true;
         }
 
+      // Urho3D - check first if the new API is available
+      if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN_MR2) {
         res = mConnection.controlTransfer(
             UsbConstants.USB_TYPE_CLASS | 0x01 /*RECIPIENT_INTERFACE*/ | UsbConstants.USB_DIR_IN,
             0x01/*HID get_report*/,
@@ -213,6 +220,7 @@ class HIDDeviceUSB implements HIDDevice {
             0,
             report, offset, length,
             1000/*timeout millis*/);
+      }
 
         if (res < 0) {
             Log.w(TAG, "getFeatureReport() returned " + res + " on device " + getDeviceName());

@@ -1,11 +1,13 @@
+// Modified by Lasse Oorni and Yao Wei Tjong for Urho3D
+
 package org.libsdl.app;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.Arrays;
 import java.util.Hashtable;
 import java.lang.reflect.Method;
 import java.lang.Math;
+import java.util.List;
 
 import android.app.*;
 import android.content.*;
@@ -30,6 +32,8 @@ import android.hardware.*;
 import android.content.pm.ActivityInfo;
 import android.content.pm.PackageManager;
 import android.content.pm.ApplicationInfo;
+
+import com.github.urho3d.UrhoActivity;
 
 /**
     SDL Activity
@@ -104,19 +108,16 @@ public class SDLActivity extends Activity implements View.OnSystemUiVisibilityCh
         return mMotionListener;
     }
 
+    // Urho3D - default implementation returns the last shared lib being loaded
+    private static String mMainSharedLib;
+
     /**
      * This method returns the name of the shared object with the application entry point
      * It can be overridden by derived classes.
      */
     protected String getMainSharedObject() {
-        String library;
-        String[] libraries = SDLActivity.mSingleton.getLibraries();
-        if (libraries.length > 0) {
-            library = "lib" + libraries[libraries.length - 1] + ".so";
-        } else {
-            library = "libmain.so";
-        }
-        return getContext().getApplicationInfo().nativeLibraryDir + "/" + library;
+        // Urho3D - should not be called before the library is loaded.
+        return mMainSharedLib;
     }
 
     /**
@@ -127,31 +128,12 @@ public class SDLActivity extends Activity implements View.OnSystemUiVisibilityCh
         return "SDL_main";
     }
 
-    /**
-     * This method is called by SDL before loading the native shared libraries.
-     * It can be overridden to provide names of shared libraries to be loaded.
-     * The default implementation returns the defaults. It never returns null.
-     * An array returned by a new implementation must at least contain "SDL2".
-     * Also keep in mind that the order the libraries are loaded may matter.
-     * @return names of shared libraries to be loaded (e.g. "SDL2", "main").
-     */
-    protected String[] getLibraries() {
-        return new String[] {
-            "hidapi",
-            "SDL2",
-            // "SDL2_image",
-            // "SDL2_mixer",
-            // "SDL2_net",
-            // "SDL2_ttf",
-            "main"
-        };
-    }
-
-    // Load the .so
-    public void loadLibraries() {
-       for (String lib : getLibraries()) {
-          SDL.loadLibrary(lib);
-       }
+    // Urho3D - avoid hardcoding of the library list
+    protected void onLoadLibrary(List<String> libraryNames) {
+        for (final String name : libraryNames) {
+            SDL.loadLibrary(name);
+        }
+        mMainSharedLib = "lib" + libraryNames.get(libraryNames.size() - 1) + ".so";
     }
 
     /**
@@ -161,7 +143,8 @@ public class SDLActivity extends Activity implements View.OnSystemUiVisibilityCh
      * @return arguments for the native application.
      */
     protected String[] getArguments() {
-        return new String[0];
+        // Urho3D - the default implementation returns the "app_process" as the first argument instead of empty array
+        return new String[]{"app_process"};
     }
 
     public static void initialize() {
@@ -196,16 +179,11 @@ public class SDLActivity extends Activity implements View.OnSystemUiVisibilityCh
             Log.v(TAG, "modify thread properties failed " + e.toString());
         }
 
-        // Load shared libraries
+        // Urho3D - auto load all the shared libraries available in the library path
         String errorMsgBrokenLib = "";
         try {
-            loadLibraries();
-        } catch(UnsatisfiedLinkError e) {
-            System.err.println(e.getMessage());
-            mBrokenLibraries = true;
-            errorMsgBrokenLib = e.getMessage();
+            onLoadLibrary(UrhoActivity.getLibraryNames(this));
         } catch(Exception e) {
-            System.err.println(e.getMessage());
             mBrokenLibraries = true;
             errorMsgBrokenLib = e.getMessage();
         }
@@ -485,8 +463,10 @@ public class SDLActivity extends Activity implements View.OnSystemUiVisibilityCh
 
         int keyCode = event.getKeyCode();
         // Ignore certain special keys so they're handled by Android
+        // Urho3D - also ignore the Home key
         if (keyCode == KeyEvent.KEYCODE_VOLUME_DOWN ||
             keyCode == KeyEvent.KEYCODE_VOLUME_UP ||
+            keyCode == KeyEvent.KEYCODE_HOME ||
             keyCode == KeyEvent.KEYCODE_CAMERA ||
             keyCode == KeyEvent.KEYCODE_ZOOM_IN || /* API 11 */
             keyCode == KeyEvent.KEYCODE_ZOOM_OUT /* API 11 */
